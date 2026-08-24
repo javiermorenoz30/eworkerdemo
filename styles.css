@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+.job-list article[hidden]{display:none}
 .objective-list:after{z-index:0}.objective-list article{z-index:1}.objective-list article>span{z-index:2}
 .menu-toggle{display:none}.mobile-nav{display:none}
 .news-card img{object-fit:contain}
