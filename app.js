@@ -1,5 +1,6 @@
 const html = document.documentElement
 const button = document.querySelector('#language')
+const menuToggle = document.querySelector('#menu-toggle'); const mainNav = document.querySelector('#main-nav'); menuToggle?.addEventListener('click',()=>{const open=mainNav.classList.toggle('menu-open');menuToggle.setAttribute('aria-expanded',String(open))}); mainNav?.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{mainNav.classList.remove('menu-open');menuToggle?.setAttribute('aria-expanded','false')}))
 const original = new Map([...document.querySelectorAll('[data-es]')].map((node) => [node, node.innerHTML]))
 let locale = 'es'
 function changeLanguage() { locale = locale === 'es' ? 'en' : 'es'; html.lang = locale; button.textContent = locale === 'es' ? 'EN' : 'ES'; document.querySelectorAll('[data-es]').forEach((node) => { node.innerHTML = node.dataset[locale] || original.get(node) }); document.querySelectorAll('.hero-art img').forEach((image) => { image.alt = locale === 'es' ? 'Profesional dominicana conectada a una red global de oportunidades' : 'Dominican professional connected to a global opportunity network' }) }
@@ -105,3 +106,4 @@ if (!reducedMotion) {
     objectivesObserver.observe(objectives)
   }
 }
+
