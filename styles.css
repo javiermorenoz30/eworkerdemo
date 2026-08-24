@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+.objective-list:after{z-index:0}.objective-list article{z-index:1}.objective-list article>span{z-index:2}
 .menu-toggle{display:none}.mobile-nav{display:none}
 .news-card img{object-fit:contain}
 @media(max-width:800px){.mobile-nav{display:block;position:fixed;top:79px;right:5%;z-index:7}.menu-toggle{display:block;background:#55e4ff;color:#07101d;border:0;border-radius:99px;padding:10px 14px;font-weight:800}.mobile-nav nav{display:none;position:absolute;right:0;top:48px;width:210px;background:#091127;border:1px solid rgba(211,226,255,.16);padding:12px}.mobile-nav nav.menu-open{display:grid;gap:5px}.mobile-nav nav a{color:#fff;text-decoration:none;padding:11px;font-size:13px}.hero{padding-top:120px;min-height:700px}.hero h1{font-size:clamp(40px,12vw,55px);line-height:1.02}.hero-art{opacity:.25}.news-card img{height:auto;aspect-ratio:4/3;object-fit:contain;background:#fff}}
