@@ -1,4 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+@media(max-width:800px){body .site-header{min-height:86px;padding:12px 20px}body .site-header .brand-logo{width:132px;height:55px}body .header-actions{margin-left:auto;margin-right:60px}body .mobile-nav{display:block;position:fixed;top:19px;right:18px;z-index:10}body #menu-toggle{display:block;border:1px solid rgba(85,228,255,.72);border-radius:999px;background:#0b1736;color:#55e4ff;padding:10px 13px;font:800 10px Manrope;letter-spacing:.35px;cursor:pointer}body .mobile-nav nav{display:none;position:absolute;right:0;top:45px;width:220px;padding:10px;background:#091127;border:1px solid rgba(211,226,255,.2);box-shadow:0 18px 45px rgba(0,0,0,.36)}body .mobile-nav nav.menu-open{display:grid;gap:3px}body .mobile-nav nav a{color:#e9eefb;text-decoration:none;padding:11px 12px;font-size:13px;font-weight:700}body .mobile-nav nav .mobile-apply{margin-bottom:5px;border-radius:8px;background:#55e4ff;color:#081127;text-align:center}body .hero{display:block;min-height:0;padding:137px 36px 60px}body .hero-copy{max-width:none}body .hero .eyebrow{margin-bottom:24px;font-size:9px;letter-spacing:1.3px;white-space:nowrap}body .hero h1{font-size:clamp(46px,11.4vw,58px);line-height:1.03;letter-spacing:-3.1px}body .hero .lede{margin:27px 0 31px;font-size:16px;line-height:1.62}body .hero .cta-row{display:grid;gap:18px;align-items:stretch}body .hero .cta-row>.button{display:none}body .hero .cta-row .hero-apply{order:-1;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:99px;background:#55e4ff;padding:16px 20px;color:#07101d;font:800 13px Manrope;text-decoration:none}body .hero .cta-row .text-link:not(.hero-apply){padding-left:2px;font-size:12px}body .hero-art{opacity:.2;pointer-events:none}body .hero-art .location{display:none}body .scroll-hint{position:static;margin-top:35px}body .news-card img{height:220px;min-height:0;object-fit:contain;background:#fff}}@media(max-width:470px){body .site-header{padding-inline:18px}body .site-header .brand-logo{width:126px;height:52px}body .hero{padding-inline:36px}body .hero .eyebrow{font-size:8px;letter-spacing:1px}body .hero h1{font-size:clamp(44px,12vw,54px)}}
+@media(max-width:800px){
+  .site-header{min-height:86px;padding:12px 20px}
+  .site-header .brand-logo{width:132px;height:55px}
+  .header-actions{margin-left:auto;margin-right:60px}
+  .header-actions .language{height:32px;width:32px}
+  .mobile-nav{display:block;position:fixed;top:19px;right:18px;z-index:10}
+  #menu-toggle{display:block;border:1px solid rgba(85,228,255,.72);border-radius:999px;background:#0b1736;color:#55e4ff;padding:10px 13px;font:800 10px Manrope;letter-spacing:.35px;cursor:pointer}
+  .mobile-nav nav{display:none;position:absolute;right:0;top:45px;width:220px;padding:10px;background:#091127;border:1px solid rgba(211,226,255,.2);box-shadow:0 18px 45px rgba(0,0,0,.36)}
+  .mobile-nav nav.menu-open{display:grid;gap:3px}
+  .mobile-nav nav a{color:#e9eefb;text-decoration:none;padding:11px 12px;font-size:13px;font-weight:700}
+  .mobile-nav nav .mobile-apply{margin-bottom:5px;border-radius:8px;background:#55e4ff;color:#081127;text-align:center}
+  .hero{display:block;min-height:0;padding:137px 36px 60px}
+  .hero-copy{max-width:none}
+  .hero .eyebrow{margin-bottom:24px;font-size:9px;letter-spacing:1.3px;white-space:nowrap}
+  .hero h1{font-size:clamp(46px,11.4vw,58px);line-height:1.03;letter-spacing:-3.1px}
+  .hero .lede{margin:27px 0 31px;font-size:16px;line-height:1.62}
+  .hero .cta-row{display:grid;gap:18px;align-items:stretch}
+  .hero .cta-row>.button{display:none}
+  .hero .cta-row .hero-apply{order:-1;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:99px;background:#55e4ff;padding:16px 20px;color:#07101d;font:800 13px Manrope;text-decoration:none}
+  .hero .cta-row .text-link:not(.hero-apply){padding-left:2px;font-size:12px}
+  .hero-art{opacity:.2;pointer-events:none}
+  .hero-art .location{display:none}
+  .scroll-hint{position:static;margin-top:35px}
+  .news-card img{height:220px;min-height:0;object-fit:contain;background:#fff}
+}
+@media(max-width:470px){.site-header{padding-inline:18px}.site-header .brand-logo{width:126px;height:52px}.hero{padding-inline:36px}.hero .eyebrow{font-size:8px;letter-spacing:1px}.hero h1{font-size:clamp(44px,12vw,54px)}}
 .job-list article[hidden]{display:none}
 .objective-list:after{z-index:0}.objective-list article{z-index:1}.objective-list article>span{z-index:2}
 .menu-toggle{display:none}.mobile-nav{display:none}
