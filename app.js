@@ -41,8 +41,8 @@ if (heroActions) {
   heroApplicationLink.href = 'application.html'
   heroApplicationLink.target = '_blank'
   heroApplicationLink.rel = 'noopener'
-  heroApplicationLink.dataset.es = 'Completa tu solicitud <span class="cta-arrow" aria-hidden="true"></span>'
-  heroApplicationLink.dataset.en = 'Complete your application <span class="cta-arrow" aria-hidden="true"></span>'
+  heroApplicationLink.dataset.es = 'Completa tu solicitud <span class="text-arrow" aria-hidden="true">↗︎</span>'
+  heroApplicationLink.dataset.en = 'Complete your application <span class="text-arrow" aria-hidden="true">↗︎</span>'
   heroApplicationLink.innerHTML = heroApplicationLink.dataset.es
   heroActions.append(heroApplicationLink)
 }
