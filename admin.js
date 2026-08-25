@@ -31,6 +31,7 @@
     byId('view-title').textContent = titles[view][0]
     byId('view-meta').textContent = titles[view][1]
     window.scrollTo({ top: 0, behavior: 'smooth' })
+    if (view === 'team') render()
   }
 
   function filteredApplications(state) {
