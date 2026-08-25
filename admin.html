@@ -1,2 +1,59 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel demo | eWorker360</title><link rel="stylesheet" href="admin.css"></head><body><aside><a class="logo" href="index.html"><img src="assets/logoewrker.png" alt="eWorker360"></a><p class="demo">MODO DEMO LOCAL</p><button class="active" data-view="overview">Resumen</button><button data-view="applications">Solicitudes</button><button data-view="content">Contenido</button><button data-view="settings">Ajustes</button><a class="visit" href="index.html">Ver sitio ↗</a></aside><main><header><div><p class="eyebrow">ADMINISTRACIÓN</p><h1 id="view-title">Buenos días.</h1></div><button id="reset">Restaurar demo</button></header><section class="notice">Modo demo local: los datos se guardan únicamente en este navegador. El correo, la seguridad y la nube se conectarán al migrar a Supabase.</section><section class="view active" id="overview"><div class="metrics"><article><span>Solicitudes</span><strong id="total">0</strong></article><article><span>Nuevas</span><strong id="new">0</strong></article><article><span>En proceso</span><strong id="progress">0</strong></article></div><div class="card"><h2>Actividad reciente</h2><div id="recent"></div></div></section><section class="view" id="applications"><div class="toolbar"><input id="search" placeholder="Buscar nombre o correo"><button id="download">Exportar CSV</button></div><div id="applications-list" class="card"></div></section><section class="view" id="content"><form id="content-form" class="card form"><h2>Contenido principal</h2><label>Titular del hero<textarea name="heroTitle"></textarea></label><label>Texto introductorio<textarea name="heroLead"></textarea></label><label>Correo de contacto<input name="contactEmail" type="email"></label><label>Teléfono<input name="contactPhone"></label><label>WhatsApp<input name="whatsapp"></label><button>Guardar cambios en esta demo</button><p id="content-note"></p></form></section><section class="view" id="settings"><form id="settings-form" class="card form"><h2>Notificaciones e integración</h2><label>Correo que recibirá solicitudes<input name="notificationEmail" type="email"></label><p>La demo no envía correos todavía. Al conectar Supabase se activarán acceso privado, base de datos, almacenamiento y notificaciones reales.</p><button>Guardar ajuste</button><p id="settings-note"></p></form></section></main><script src="admin-data.js"></script><script src="admin.js"></script></body></html>
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="Panel de control demo de eWorker360 Dominicana." />
+    <title>Control Center | eWorker360</title>
+    <link rel="stylesheet" href="admin.css?v=premium-1" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="logo" href="index.html" aria-label="Ver sitio eWorker360"><img src="assets/logoewrker.png" alt="eWorker360" /></a>
+      <div class="workspace"><span class="live-dot"></span><span>CONTROL CENTER</span><b>Modo demo</b></div>
+      <nav aria-label="Secciones del panel">
+        <button class="nav-item active" data-view="overview"><span>01</span>Resumen</button>
+        <button class="nav-item" data-view="applications"><span>02</span>Solicitudes <b id="nav-count">0</b></button>
+        <button class="nav-item" data-view="content"><span>03</span>Contenido</button>
+        <button class="nav-item" data-view="settings"><span>04</span>Ajustes</button>
+      </nav>
+      <div class="sidebar-bottom"><a class="visit" href="index.html">Ver sitio público <i aria-hidden="true">→</i></a><small>eWorker360 / 2025</small></div>
+    </aside>
+
+    <main>
+      <header class="topbar"><div><p class="eyebrow">ADMINISTRACIÓN / EWORKER360</p><h1 id="view-title">Centro de control.</h1><p class="view-meta" id="view-meta">Una vista clara de tu operación y talento.</p></div><div class="top-actions"><button class="ghost" id="reset">Restaurar demo</button><button class="primary" id="seed-demo">Cargar datos de muestra</button></div></header>
+      <section class="notice"><span aria-hidden="true">i</span><p><b>Modo demo local.</b> Todo se guarda únicamente en este navegador. La conexión de correo, usuarios y base de datos quedará lista para Supabase.</p></section>
+
+      <section class="view active" id="overview">
+        <div class="command-card"><div><p class="eyebrow">PULSO DE LA OPERACIÓN</p><h2>Decide con contexto, <em>actúa con velocidad.</em></h2><p>Revisa el estado del talento, prioriza seguimientos y mantén la información clave al alcance.</p></div><div class="command-actions"><button class="primary" data-go="applications">Revisar solicitudes <i aria-hidden="true">→</i></button><button class="ghost light" data-go="content">Editar landing</button></div></div>
+        <div class="metrics">
+          <article><span class="metric-label">Solicitudes</span><strong id="total">0</strong><small id="total-sub">Sin actividad todavía</small></article>
+          <article><span class="metric-label">Nuevas</span><strong id="new">0</strong><small>Esperando revisión</small></article>
+          <article><span class="metric-label">En proceso</span><strong id="progress">0</strong><small>Revisión o entrevista</small></article>
+          <article><span class="metric-label">Contratadas</span><strong id="hired">0</strong><small>Talento incorporado</small></article>
+        </div>
+        <div class="overview-grid"><section class="card pipeline-card"><div class="card-heading"><div><p class="eyebrow">EMBUDO</p><h2>Pipeline de selección</h2></div><span id="pipeline-total" class="count-chip">0 total</span></div><div id="pipeline" class="pipeline"></div></section><section class="card focus-card"><p class="eyebrow">PRÓXIMA ACCIÓN</p><h2 id="focus-title">Tu operación está lista.</h2><p id="focus-copy">Carga los datos de muestra o recibe solicitudes desde el formulario público para empezar.</p><button class="text-button" data-go="applications">Abrir bandeja <i aria-hidden="true">→</i></button></section></div>
+        <section class="card recent-card"><div class="card-heading"><div><p class="eyebrow">ACTIVIDAD RECIENTE</p><h2>Últimas solicitudes</h2></div><button class="text-button" data-go="applications">Ver todas <i aria-hidden="true">→</i></button></div><div id="recent" class="recent-list"></div></section>
+      </section>
+
+      <section class="view" id="applications">
+        <div class="section-heading"><div><p class="eyebrow">TALENTO</p><h2>Bandeja de solicitudes</h2><p>Filtra, revisa detalles y actualiza cada etapa sin salir del panel.</p></div><button id="download" class="ghost">Exportar CSV</button></div>
+        <div class="filters card"><label class="search-field"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Buscar nombre, correo o área" /></label><label>Estado<select id="status-filter"><option value="all">Todos los estados</option><option>Nueva</option><option>En revisión</option><option>Entrevista</option><option>Contratada</option><option>Descartada</option></select></label><label>Orden<select id="sort"><option value="recent">Más recientes</option><option value="name">Nombre A–Z</option><option value="status">Estado</option></select></label></div>
+        <div class="applications-layout"><section class="card candidates-panel"><div class="list-label"><span id="results-count">0 solicitudes</span><span>Estado</span></div><div id="applications-list" class="applications-list"></div></section><aside id="candidate-detail" class="card candidate-detail" aria-live="polite"></aside></div>
+      </section>
+
+      <section class="view" id="content">
+        <div class="section-heading"><div><p class="eyebrow">SITIO PÚBLICO</p><h2>Editor de contenido</h2><p>Actualiza los mensajes principales de la web. En esta demo se guardan en este navegador.</p></div><a class="ghost link-button" href="index.html" target="_blank" rel="noopener">Abrir landing <i aria-hidden="true">→</i></a></div>
+        <form id="content-form" class="card form"><div class="form-section"><p class="eyebrow">IDENTIDAD</p><div class="field-grid"><label>Nombre comercial<input name="brandName" /></label><label>Correo de contacto<input name="contactEmail" type="email" /></label><label>Teléfono<input name="contactPhone" type="tel" /></label><label>WhatsApp<input name="whatsapp" /></label></div></div><div class="form-section"><p class="eyebrow">HERO PRINCIPAL</p><label>Titular<textarea name="heroTitle"></textarea></label><label>Texto introductorio<textarea name="heroLead"></textarea></label></div><div class="form-footer"><p id="content-note" class="form-note" aria-live="polite"></p><button class="primary">Guardar cambios</button></div></form>
+      </section>
+
+      <section class="view" id="settings">
+        <div class="section-heading"><div><p class="eyebrow">OPERACIÓN</p><h2>Ajustes e integración</h2><p>Configura cómo quieres preparar las notificaciones antes de conectar Supabase.</p></div></div>
+        <div class="settings-grid"><form id="settings-form" class="card form"><p class="eyebrow">NOTIFICACIONES</p><label>Correo que recibirá solicitudes<input name="notificationEmail" type="email" /></label><label>Asunto del correo<input name="emailSubject" /></label><label class="toggle-row"><input name="autoReply" type="checkbox" /><span><b>Confirmación automática</b><small>Preparada para activar al conectar el servicio de correo.</small></span></label><div class="form-footer"><p id="settings-note" class="form-note" aria-live="polite"></p><button class="primary">Guardar ajustes</button></div></form><aside class="card readiness"><p class="eyebrow">RUTA A PRODUCCIÓN</p><h2>Lo que falta para estar en vivo.</h2><ol><li><span>01</span><div><b>Supabase Auth</b><small>Acceso privado al panel.</small></div></li><li><span>02</span><div><b>Base de datos</b><small>Solicitudes centralizadas.</small></div></li><li><span>03</span><div><b>Correo transaccional</b><small>Notificaciones al equipo.</small></div></li></ol><p>El diseño y el flujo ya están listos para esa conexión.</p></aside></div>
+      </section>
+    </main>
+    <script src="admin-data.js"></script>
+    <script src="admin.js"></script>
+  </body>
+</html>
 
