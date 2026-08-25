@@ -6,6 +6,7 @@
     <meta name="description" content="Panel de control demo de eWorker360 Dominicana." />
     <title>Control Center | eWorker360</title>
     <link rel="stylesheet" href="admin.css?v=premium-1" />
+    <style>.team-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(330px,1.2fr);gap:17px}.access-note{margin:15px 0 0;color:#78829c;font-size:12px;line-height:1.65}.staff-card{min-height:390px}.staff-list{margin-top:16px}.staff-row{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}.staff-row:first-child{border-top:0}.staff-info b,.staff-info small{display:block}.staff-info small{margin-top:3px;color:#77819b;font-size:11px}.presence{display:inline-flex;align-items:center;gap:6px;color:#73809c;font-size:10px;font-weight:800}.presence:before{content:'';width:7px;height:7px;border-radius:50%;background:#a2aaba}.presence.online{color:#188561}.presence.online:before{background:#35cf97;box-shadow:0 0 0 4px rgba(53,207,151,.12)}.staff-action{border:1px solid #d9dfed;border-radius:8px;background:#fff;color:#43516e;padding:7px 9px;font-size:10px;font-weight:800;cursor:pointer}.staff-action:hover{border-color:#8490bc}@media(max-width:1060px){.team-grid{grid-template-columns:1fr}}@media(max-width:760px){.team-grid{grid-template-columns:1fr}.staff-row{grid-template-columns:36px minmax(0,1fr)}.staff-row .staff-action{grid-column:2;justify-self:start}}</style>
   </head>
   <body>
     <aside class="sidebar">
@@ -16,6 +17,7 @@
         <button class="nav-item" data-view="applications"><span>02</span>Solicitudes <b id="nav-count">0</b></button>
         <button class="nav-item" data-view="content"><span>03</span>Contenido</button>
         <button class="nav-item" data-view="settings"><span>04</span>Ajustes</button>
+        <button class="nav-item" data-view="team"><span>05</span>Equipo <b id="team-count">0</b></button>
       </nav>
       <div class="sidebar-bottom"><a class="visit" href="index.html">Ver sitio público <i aria-hidden="true">→</i></a><small>eWorker360 / 2025</small></div>
     </aside>
@@ -51,9 +53,13 @@
         <div class="section-heading"><div><p class="eyebrow">OPERACIÓN</p><h2>Ajustes e integración</h2><p>Configura cómo quieres preparar las notificaciones antes de conectar Supabase.</p></div></div>
         <div class="settings-grid"><form id="settings-form" class="card form"><p class="eyebrow">NOTIFICACIONES</p><label>Correo que recibirá solicitudes<input name="notificationEmail" type="email" /></label><label>Asunto del correo<input name="emailSubject" /></label><label class="toggle-row"><input name="autoReply" type="checkbox" /><span><b>Confirmación automática</b><small>Preparada para activar al conectar el servicio de correo.</small></span></label><div class="form-footer"><p id="settings-note" class="form-note" aria-live="polite"></p><button class="primary">Guardar ajustes</button></div></form><aside class="card readiness"><p class="eyebrow">RUTA A PRODUCCIÓN</p><h2>Lo que falta para estar en vivo.</h2><ol><li><span>01</span><div><b>Supabase Auth</b><small>Acceso privado al panel.</small></div></li><li><span>02</span><div><b>Base de datos</b><small>Solicitudes centralizadas.</small></div></li><li><span>03</span><div><b>Correo transaccional</b><small>Notificaciones al equipo.</small></div></li></ol><p>El diseño y el flujo ya están listos para esa conexión.</p></aside></div>
       </section>
+      <section class="view" id="team">
+        <div class="section-heading"><div><p class="eyebrow">ACCESOS</p><h2>Equipo de solicitudes</h2><p>Crea accesos limitados al portal de reclutamiento y consulta su última actividad.</p></div><a class="ghost link-button" href="staff-login.html" target="_blank" rel="noopener">Abrir inicio de sesión <i aria-hidden="true">→</i></a></div>
+        <div class="team-grid"><form id="staff-form" class="card form"><p class="eyebrow">NUEVO ACCESO</p><h2>Invitar al equipo.</h2><label>Nombre completo<input name="name" required autocomplete="name" placeholder="Ej. Laura Peña" /></label><label>Correo de acceso<input name="email" type="email" required autocomplete="email" placeholder="nombre@empresa.com" /></label><label>Código temporal demo<input name="accessCode" required minlength="4" placeholder="Ej. eworker-2025" /></label><p class="access-note">Este usuario solo podrá administrar solicitudes. En producción, este código se reemplaza por Supabase Auth.</p><div class="form-footer"><p id="staff-note" class="form-note" aria-live="polite"></p><button class="primary">Crear acceso limitado</button></div></form><section class="card staff-card"><div class="card-heading"><div><p class="eyebrow">SUPERVISIÓN</p><h2>Accesos activos</h2></div><span class="count-chip" id="staff-online-count">0 en línea</span></div><div id="staff-list" class="staff-list"></div></section></div>
+      </section>
     </main>
-    <script src="admin-data.js?v=premium-1"></script>
-    <script src="admin.js?v=premium-1"></script>
+    <script src="admin-data.js?v=team-1"></script>
+    <script src="admin.js?v=team-1"></script>
   </body>
 </html>
 
