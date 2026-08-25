@@ -9,7 +9,6 @@ const scheduleNonCritical = () => {
       textNodes.forEach((node) => { node.nodeValue = node.nodeValue.replace(/↗(?!︎)/gu, '↗︎') })
     }
     normalizeArrowText()
-    document.querySelector('.faq')?.setAttribute('id', 'faq')
 const menuToggle = document.querySelector('#menu-toggle')
 const mainNav = document.querySelector('#main-nav')
 if (menuToggle && mainNav && !menuToggle.dataset.menuReady) {
