@@ -13,6 +13,7 @@
       autoReply: 'on',
     },
     applications: [],
+    staff: [],
   }
 
   const clone = (value) => JSON.parse(JSON.stringify(value))
@@ -85,6 +86,43 @@
     return clone(state.applications)
   }
 
+  const addStaff = ({ name, email, accessCode }) => {
+    const state = load()
+    const normalizedEmail = String(email || '').trim().toLowerCase()
+    if (!name || !normalizedEmail || !accessCode) return null
+    if (state.staff.some((member) => member.email === normalizedEmail)) return null
+    const member = {
+      id: `staff-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: String(name).trim(),
+      email: normalizedEmail,
+      accessCode: String(accessCode),
+      role: 'Solicitudes',
+      status: 'Activo',
+      createdAt: new Date().toISOString(),
+      lastSeenAt: null,
+    }
+    state.staff.unshift(member)
+    persist(state)
+    return clone(member)
+  }
+
+  const updateStaff = (id, patch) => {
+    const state = load()
+    const index = state.staff.findIndex((member) => member.id === id)
+    if (index < 0) return null
+    state.staff[index] = { ...state.staff[index], ...patch }
+    persist(state)
+    return clone(state.staff[index])
+  }
+
+  const authenticateStaff = (email, accessCode) => {
+    const state = load()
+    const member = state.staff.find((entry) => entry.email === String(email || '').trim().toLowerCase() && entry.accessCode === String(accessCode || '') && entry.status === 'Activo')
+    return member ? clone(member) : null
+  }
+
+  const recordStaffActivity = (id) => updateStaff(id, { lastSeenAt: new Date().toISOString() })
+
   const exportApplicationsCsv = () => {
     const rows = getState().applications
     const headers = ['id', 'createdAt', 'status', 'fullName', 'email', 'phone', 'role', 'note']
@@ -95,6 +133,6 @@
     return getState()
   }
 
-  window.EWorkerDemoStore = { getState, saveSettings, addApplication, updateApplication, seedDemoApplications, exportApplicationsCsv, reset }
+  window.EWorkerDemoStore = { getState, saveSettings, addApplication, updateApplication, seedDemoApplications, addStaff, updateStaff, authenticateStaff, recordStaffActivity, exportApplicationsCsv, reset }
 })()
 
