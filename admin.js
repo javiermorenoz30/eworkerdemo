@@ -7,6 +7,7 @@
     applications: ['Bandeja de solicitudes.', 'Revisa cada candidatura y mueve el proceso con un clic.'],
     content: ['Contenido de la landing.', 'Ajusta el mensaje de eWorker360 en modo demo.'],
     settings: ['Ajustes de la demo.', 'Prepara las notificaciones para la siguiente etapa.'],
+    team: ['Equipo y accesos.', 'Crea roles limitados y supervisa la actividad del equipo.'],
   }
   let selectedId = null
 
@@ -100,6 +101,24 @@
     })
   }
 
+  function renderTeam(state) {
+    const members = state.staff || []
+    const isOnline = (member) => member.status === 'Activo' && member.lastSeenAt && Date.now() - new Date(member.lastSeenAt).getTime() < 180000
+    const online = members.filter(isOnline).length
+    byId('team-count').textContent = members.length
+    byId('staff-online-count').textContent = `${online} en línea`
+    const list = byId('staff-list')
+    if (!members.length) {
+      list.innerHTML = '<p class="empty">Aún no has creado accesos. Agrega al primer responsable de solicitudes desde el formulario.</p>'
+      return
+    }
+    list.innerHTML = members.map((member) => {
+      const active = isOnline(member)
+      const stateLabel = member.status === 'Activo' ? (active ? 'En línea' : member.lastSeenAt ? `Visto ${dateLabel(member.lastSeenAt)}` : 'Sin inicio de sesión') : 'Acceso pausado'
+      return `<div class="staff-row"><span class="avatar">${escapeHtml(initials(member.name))}</span><div class="staff-info"><b>${escapeHtml(member.name)}</b><small>${escapeHtml(member.email)} · Solo solicitudes</small><span class="presence ${active ? 'online' : ''}">${escapeHtml(stateLabel)}</span></div><button class="staff-action" data-staff-toggle="${escapeHtml(member.id)}">${member.status === 'Activo' ? 'Pausar' : 'Activar'}</button></div>`
+    }).join('')
+  }
+
   function render() {
     const state = store.getState()
     const apps = state.applications
@@ -118,6 +137,7 @@
     renderRecent(apps)
     renderApplications(state)
     populateForms(state.settings)
+    renderTeam(state)
   }
 
   document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.view)))
@@ -142,7 +162,7 @@
     store.updateApplication(target.dataset.saveNote, { note })
     render()
   })
-  document.querySelectorAll('.form').forEach((form) => form.addEventListener('submit', (event) => {
+  document.querySelectorAll('.form:not(#staff-form)').forEach((form) => form.addEventListener('submit', (event) => {
     event.preventDefault()
     const values = Object.fromEntries(new FormData(form))
     if (form.id === 'settings-form') values.autoReply = form.elements.autoReply.checked ? 'on' : ''
@@ -150,6 +170,22 @@
     form.querySelector('.form-note').textContent = 'Cambios guardados en este navegador.'
     render()
   }))
+  byId('staff-form').addEventListener('submit', (event) => {
+    event.preventDefault()
+    const member = store.addStaff(Object.fromEntries(new FormData(event.currentTarget)))
+    const note = byId('staff-note')
+    note.textContent = member ? `Acceso creado para ${member.name}.` : 'No se pudo crear: revisa los datos o usa otro correo.'
+    if (member) event.currentTarget.reset()
+    render()
+  })
+  byId('staff-list').addEventListener('click', (event) => {
+    const target = event.target.closest('[data-staff-toggle]')
+    if (!target) return
+    const member = store.getState().staff.find((entry) => entry.id === target.dataset.staffToggle)
+    if (!member) return
+    store.updateStaff(member.id, { status: member.status === 'Activo' ? 'Pausado' : 'Activo' })
+    render()
+  })
   byId('seed-demo').addEventListener('click', () => { store.seedDemoApplications(); render() })
   byId('download').addEventListener('click', () => {
     const url = URL.createObjectURL(new Blob([store.exportApplicationsCsv()], { type: 'text/csv' }))
