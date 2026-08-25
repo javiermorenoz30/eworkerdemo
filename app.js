@@ -7,7 +7,24 @@ const normalizeArrowText = (scope = document) => {
   textNodes.forEach((node) => { node.nodeValue = node.nodeValue.replace(/↗(?!︎)/gu, '↗︎') })
 }
 normalizeArrowText()
-const menuToggle = document.querySelector('#menu-toggle'); const mainNav = document.querySelector('#main-nav'); menuToggle?.addEventListener('click',()=>{const open=mainNav.classList.toggle('menu-open');menuToggle.classList.toggle('is-open',open);menuToggle.setAttribute('aria-expanded',String(open));menuToggle.setAttribute('aria-label',open?'Cerrar menú':'Abrir menú')}); mainNav?.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{mainNav.classList.remove('menu-open');menuToggle?.classList.remove('is-open');menuToggle?.setAttribute('aria-expanded','false');menuToggle?.setAttribute('aria-label','Abrir menú')}))
+const menuToggle = document.querySelector('#menu-toggle')
+const mainNav = document.querySelector('#main-nav')
+if (menuToggle && mainNav && !menuToggle.dataset.menuReady) {
+  const closeMenu = () => {
+    mainNav.classList.remove('menu-open')
+    menuToggle.classList.remove('is-open')
+    menuToggle.setAttribute('aria-expanded', 'false')
+    menuToggle.setAttribute('aria-label', 'Abrir menú')
+  }
+  menuToggle.addEventListener('click', () => {
+    const open = mainNav.classList.toggle('menu-open')
+    menuToggle.classList.toggle('is-open', open)
+    menuToggle.setAttribute('aria-expanded', String(open))
+    menuToggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú')
+  })
+  mainNav.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu))
+  menuToggle.dataset.menuReady = 'true'
+}
 const original = new Map([...document.querySelectorAll('[data-es]')].map((node) => [node, node.innerHTML]))
 let locale = 'es'
 function changeLanguage() { locale = locale === 'es' ? 'en' : 'es'; html.lang = locale; button.textContent = locale === 'es' ? 'EN' : 'ES'; document.querySelectorAll('[data-es]').forEach((node) => { node.innerHTML = node.dataset[locale] || original.get(node) }); normalizeArrowText(); document.querySelectorAll('.hero-art img').forEach((image) => { image.alt = locale === 'es' ? 'Profesional dominicana conectada a una red global de oportunidades' : 'Dominican professional connected to a global opportunity network' }) }
