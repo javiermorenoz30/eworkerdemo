@@ -1,12 +1,14 @@
-const html = document.documentElement
-const button = document.querySelector('#language')
-const normalizeArrowText = (scope = document) => {
-  const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT)
-  const textNodes = []
-  while (walker.nextNode()) textNodes.push(walker.currentNode)
-  textNodes.forEach((node) => { node.nodeValue = node.nodeValue.replace(/↗(?!︎)/gu, '↗︎') })
-}
-normalizeArrowText()
+const scheduleNonCritical = () => {
+  const runNonCritical = () => {
+    const html = document.documentElement
+    const button = document.querySelector('#language')
+    const normalizeArrowText = (scope = document) => {
+      const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT)
+      const textNodes = []
+      while (walker.nextNode()) textNodes.push(walker.currentNode)
+      textNodes.forEach((node) => { node.nodeValue = node.nodeValue.replace(/↗(?!︎)/gu, '↗︎') })
+    }
+    normalizeArrowText()
 const menuToggle = document.querySelector('#menu-toggle')
 const mainNav = document.querySelector('#main-nav')
 if (menuToggle && mainNav && !menuToggle.dataset.menuReady) {
@@ -130,4 +132,11 @@ if (!reducedMotion) {
     objectivesObserver.observe(objectives)
   }
 }
+  }
+  if ('requestIdleCallback' in window) window.requestIdleCallback(runNonCritical, { timeout: 1200 })
+  else window.setTimeout(runNonCritical, 0)
+}
+
+if (document.readyState === 'complete') scheduleNonCritical()
+else window.addEventListener('load', scheduleNonCritical, { once: true })
 
