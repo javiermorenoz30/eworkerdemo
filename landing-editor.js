@@ -63,6 +63,13 @@ function collectImagePaths(value, paths = new Set()) {
   return paths
 }
 
+function isSafeLinkTarget(value = '') {
+  const href = String(value || '').trim()
+  if (!href || href.startsWith('#')) return true
+  if (/^(https:\/\/|mailto:|tel:)/i.test(href)) return true
+  return !/^[a-z][a-z0-9+.-]*:/i.test(href) && /^(?:\.\.?\/)?[^\s]+$/i.test(href)
+}
+
 function injectStyles() {
   if (document.getElementById('landing-editor-styles')) return
   const style = create('style')
@@ -359,6 +366,8 @@ export async function initLandingEditor() {
   let sections = []
   let dirty = false
   let busy = false
+  let loaded = false
+  let revision = 0
   let dragSectionId = null
   const openSections = new Set()
   const localeBySection = new Map()
@@ -370,13 +379,22 @@ export async function initLandingEditor() {
   }
   const setNote = (text = '') => { note.textContent = text }
   const markDirty = () => {
+    revision += 1
     dirty = true
     setStatus('Cambios sin guardar', 'dirty')
     setNote('Guarda el borrador para poder revisarlo en Vista previa.')
   }
   const setBusy = (value) => {
     busy = value
-    ;[saveButton, previewButton, publishButton, addButton].forEach((button) => { button.disabled = value })
+    shell.querySelectorAll('input, textarea, select, button').forEach((control) => {
+      if (value) {
+        control.dataset.busyDisabled = control.disabled ? 'true' : 'false'
+        control.disabled = value
+      } else {
+        control.disabled = control.dataset.busyDisabled === 'true'
+        delete control.dataset.busyDisabled
+      }
+    })
   }
   const rememberMedia = (value) => collectImagePaths(value).forEach((path) => orphanMedia.add(path))
   const currentSection = (id) => sections.find((section) => section.id === id)
@@ -408,7 +426,7 @@ export async function initLandingEditor() {
       const card = create('section', 'landing-section-card')
       card.dataset.sectionId = section.id
       card.dataset.editorLocale = localeBySection.get(section.id) || 'es'
-      card.draggable = true
+      card.draggable = !busy && loaded
 
       const summary = create('div', 'landing-section-summary')
       const drag = create('button', 'landing-drag')
@@ -423,8 +441,8 @@ export async function initLandingEditor() {
       copy.append(title, subtitle)
 
       const tools = create('div', 'landing-section-tools')
-      const up = makeButton('↑', 'move-up'); up.disabled = index === 0
-      const down = makeButton('↓', 'move-down'); down.disabled = index === sections.length - 1
+      const up = makeButton('↑', 'move-up'); up.disabled = busy || index === 0
+      const down = makeButton('↓', 'move-down'); down.disabled = busy || index === sections.length - 1
       const visible = makeButton(section.visible === false ? 'Mostrar' : 'Ocultar', 'toggle-visible')
       const edit = makeButton(openSections.has(section.id) ? 'Cerrar' : 'Editar', 'edit')
       const menu = create('details', 'landing-section-menu')
@@ -453,9 +471,12 @@ export async function initLandingEditor() {
       card.append(editor)
       list.append(card)
     })
+
+    if (busy) setBusy(true)
   }
 
   function mutateSection(action, sectionId) {
+    if (!loaded || busy) return
     const section = currentSection(sectionId)
     if (!section) return
     if (action === 'edit') {
@@ -489,6 +510,7 @@ export async function initLandingEditor() {
   }
 
   list.addEventListener('click', (event) => {
+    if (!loaded || busy) return
     const localeButton = event.target.closest('[data-section-locale]')
     if (localeButton) {
       localeBySection.set(localeButton.dataset.sectionId, localeButton.dataset.sectionLocale)
@@ -556,6 +578,7 @@ export async function initLandingEditor() {
   })
 
   list.addEventListener('input', (event) => {
+    if (!loaded || busy) return
     const target = event.target
     if (target.dataset.localizedArrayPath && target.dataset.localizedArrayLocale) {
       const section = currentSection(target.dataset.sectionId)
@@ -574,11 +597,19 @@ export async function initLandingEditor() {
     if (!target.dataset.fieldPath || !target.dataset.sectionId) return
     const section = currentSection(target.dataset.sectionId)
     if (!section) return
-    setAtPath(section.content, JSON.parse(target.dataset.fieldPath), target.value)
+    const path = JSON.parse(target.dataset.fieldPath)
+    if (path.at(-1) === 'href' && !isSafeLinkTarget(target.value)) {
+      target.setCustomValidity('Usa un enlace interno, https://, mailto: o tel:.')
+      setNote('Ese destino no es válido. Usa un enlace interno, https://, correo o teléfono.')
+      return
+    }
+    target.setCustomValidity('')
+    setAtPath(section.content, path, target.value)
     markDirty()
   })
 
   list.addEventListener('change', async (event) => {
+    if (!loaded || busy) return
     const input = event.target
     if (!input.dataset.imagePath || !input.dataset.sectionId || !input.files?.[0]) return
     const section = currentSection(input.dataset.sectionId)
@@ -601,6 +632,7 @@ export async function initLandingEditor() {
   })
 
   list.addEventListener('dragstart', (event) => {
+    if (!loaded || busy) return
     const card = event.target.closest('[data-section-id]')
     if (!card) return
     dragSectionId = card.dataset.sectionId
@@ -608,6 +640,7 @@ export async function initLandingEditor() {
     event.dataTransfer?.setData('text/plain', dragSectionId)
   })
   list.addEventListener('dragover', (event) => {
+    if (!loaded || busy) return
     const card = event.target.closest('[data-section-id]')
     if (!card || card.dataset.sectionId === dragSectionId) return
     event.preventDefault()
@@ -615,6 +648,7 @@ export async function initLandingEditor() {
   })
   list.addEventListener('dragleave', (event) => event.target.closest('[data-section-id]')?.classList.remove('is-drop-target'))
   list.addEventListener('drop', (event) => {
+    if (!loaded || busy) return
     const target = event.target.closest('[data-section-id]')
     if (!target || !dragSectionId || target.dataset.sectionId === dragSectionId) return
     event.preventDefault()
@@ -632,13 +666,21 @@ export async function initLandingEditor() {
   })
 
   async function persistDraft() {
-    if (busy) return false
+    if (!loaded || busy) return false
+    const savingRevision = revision
+    const snapshot = structuredClone(sections)
     setBusy(true); setStatus('Guardando…'); setNote('')
     try {
-      await saveDraft(sections)
-      dirty = false
-      setStatus('Borrador guardado')
-      setNote('Borrador guardado. Puedes abrir Vista previa o seguir editando.')
+      await saveDraft(snapshot)
+      if (revision === savingRevision) {
+        dirty = false
+        setStatus('Borrador guardado')
+        setNote('Borrador guardado. Puedes abrir Vista previa o seguir editando.')
+      } else {
+        dirty = true
+        setStatus('Cambios sin guardar', 'dirty')
+        setNote('El borrador se guardó, pero hay cambios posteriores pendientes.')
+      }
       await cleanupMedia()
       return true
     } catch (error) {
@@ -647,11 +689,13 @@ export async function initLandingEditor() {
       return false
     } finally {
       setBusy(false)
+      renderSections()
     }
   }
 
   saveButton.addEventListener('click', persistDraft)
   previewButton.addEventListener('click', async () => {
+    if (!loaded || busy) return
     const previewWindow = window.open('', '_blank')
     if (previewWindow) previewWindow.opener = null
     const ready = dirty ? await persistDraft() : true
@@ -660,6 +704,7 @@ export async function initLandingEditor() {
     else window.open('index.html?preview=draft', '_blank', 'noopener')
   })
   publishButton.addEventListener('click', async () => {
+    if (!loaded || busy) return
     if (!window.confirm('¿Publicar este borrador en la página principal?')) return
     if (dirty && !(await persistDraft())) return
     setBusy(true); setStatus('Publicando…'); setNote('')
@@ -674,9 +719,11 @@ export async function initLandingEditor() {
       setNote(error?.message || 'No se pudo publicar. El sitio público no cambió.')
     } finally {
       setBusy(false)
+      renderSections()
     }
   })
   addButton.addEventListener('click', () => {
+    if (!loaded || busy) return
     const section = createSection(templateSelect.value)
     sections.push(section)
     sections = normalizeSectionPositions(sections)
@@ -690,13 +737,18 @@ export async function initLandingEditor() {
   try {
     const draft = await getDraftLanding()
     sections = normalizeSectionPositions(draft?.sections || [])
+    loaded = true
     setStatus('Borrador guardado')
     setNote('Edita una sección o agrega una nueva.')
     renderSections()
   } catch (error) {
+    loaded = false
     setStatus('No disponible', 'dirty')
-    setNote(error?.message || 'No se pudo cargar el borrador.')
+    setNote(error?.message || 'No se pudo cargar el borrador. Recarga la página antes de editar.')
   } finally {
     setBusy(false)
+    if (!loaded) {
+      ;[saveButton, previewButton, publishButton, addButton, templateSelect].forEach((control) => { control.disabled = true })
+    }
   }
 }
