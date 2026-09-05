@@ -19,6 +19,7 @@ Incluido:
 - La web pública solo consume la versión publicada.
 - Almacenamiento de imágenes en Supabase Storage.
 - Protección de escritura mediante Supabase/RLS para `admin` y `boss`.
+- Conservación del funcionamiento bilingüe Español/Inglés de la landing actual.
 
 Fuera de alcance:
 
@@ -80,6 +81,8 @@ Ejemplo para Hero:
 - Destino del enlace secundario
 - Imagen principal
 
+Los campos de texto tendrán dos pestañas simples: **Español** e **Inglés**. Español será el contenido principal. El campo inglés será editable y, cuando esté vacío, la landing podrá mostrar el texto español como respaldo en lugar de dejar contenido en blanco.
+
 Las imágenes mostrarán una miniatura y acciones claras:
 
 - **Cambiar foto**
@@ -118,13 +121,15 @@ Cada registro representa una sección perteneciente a una versión:
 - `created_at`
 - `updated_at`
 
-`content` contiene los campos específicos de la plantilla, evitando crear una tabla distinta por cada tipo de sección.
+`content` contiene los campos específicos de la plantilla, incluyendo las variantes `es` y `en` cuando un campo sea traducible, evitando crear una tabla distinta por cada tipo de sección.
 
 ### Imágenes
 
-Las imágenes se guardarán en un bucket de Supabase Storage, por ejemplo `landing-media`.
+Las imágenes se guardarán en un bucket de Supabase Storage llamado `landing-media`.
 
-En `content` solo se guardarán referencias seguras a los archivos necesarios. Al reemplazar o eliminar una imagen, el editor actualizará la referencia y podrá limpiar archivos sin uso de forma controlada.
+El bucket se usará únicamente para medios de la landing y podrá servir imágenes públicamente para que la web cargue rápido. La seguridad editorial se aplica a las operaciones de subir, reemplazar y eliminar: solo `admin` y `boss` podrán escribir en ese bucket. Los borradores no serán públicos aunque sus archivos de imagen individuales no sean información sensible.
+
+En `content` solo se guardarán referencias a los archivos necesarios. Al reemplazar o eliminar una imagen, el editor actualizará la referencia y realizará una limpieza controlada de archivos que ya no estén referenciados por ninguna versión necesaria.
 
 ## Borrador, vista previa y publicación
 
@@ -134,11 +139,11 @@ Guarda todos los cambios sin afectar la web pública.
 
 ### Vista previa
 
-Abre la landing usando el borrador actual. La vista previa requiere sesión con rol `admin` o `boss` y no debe indexarse ni ser accesible públicamente.
+Abre la landing usando el borrador actual. La vista previa requiere sesión con rol `admin` o `boss`, debe llevar `noindex` y no debe exponer el contenido del borrador a usuarios anónimos.
 
 ### Publicar
 
-La publicación debe ser atómica:
+La publicación debe ejecutarse como una operación transaccional en Supabase:
 
 - valida que la versión tenga una estructura válida;
 - marca la nueva versión como publicada;
@@ -151,7 +156,9 @@ Si la publicación falla, la versión pública anterior permanece intacta.
 
 La landing conservará el diseño actual, pero las secciones dejarán de depender de textos e imágenes escritos directamente en `index.html`.
 
-La página cargará la versión publicada y renderizará cada sección según su `type` y `position`.
+La página cargará únicamente la versión publicada y renderizará cada sección visible según su `type` y `position`.
+
+Para usuarios anónimos, RLS permitirá leer exclusivamente la versión publicada y sus secciones visibles. Los borradores solo serán legibles por `admin` y `boss` autenticados.
 
 Se mantendrá un fallback seguro al contenido inicial durante la migración para evitar una página vacía si Supabase no responde.
 
@@ -159,7 +166,7 @@ Se mantendrá un fallback seguro al contenido inicial durante la migración para
 
 La primera migración creará una versión publicada a partir del contenido que ya existe hoy en la landing. Así, después del cambio, el sitio debe verse prácticamente igual antes de que Boss/Admin editen nada.
 
-Los textos, imágenes y secciones actuales se convertirán en registros de `landing_sections` respetando su orden visual.
+Los textos en Español e Inglés, imágenes y secciones actuales se convertirán en registros de `landing_sections` respetando su orden visual.
 
 ## Roles y autorización
 
@@ -203,12 +210,14 @@ La implementación debe cubrir como mínimo:
 - `boss` entra a las mismas rutas que `admin`.
 - `boss` y `admin` pueden leer/escribir/publicar contenido.
 - otros roles no pueden modificar ni publicar contenido mediante RLS.
+- usuarios anónimos pueden leer la versión publicada, pero no borradores.
 - Guardar borrador no altera la versión pública.
 - Vista previa usa el borrador.
 - Publicar cambia la versión pública solo después de una operación exitosa.
 - Reordenar secciones conserva posiciones válidas.
 - Ocultar una sección evita que se renderice públicamente.
 - Subir/reemplazar/eliminar imágenes actualiza correctamente las referencias.
+- el selector Español/Inglés conserva el contenido bilingüe y aplica fallback a Español cuando corresponda.
 - El contenido migrado reproduce la estructura actual de la landing.
 - El panel ya no muestra las advertencias técnicas indicadas.
 
@@ -226,3 +235,4 @@ La tarea se considera terminada cuando:
 8. Si una publicación falla, la web pública anterior continúa funcionando.
 9. Las advertencias técnicas del panel dejan de mostrarse.
 10. El diseño visual actual se conserva como base.
+11. El cambio de idioma Español/Inglés continúa funcionando después de la migración al editor.
