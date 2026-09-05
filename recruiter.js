@@ -7,6 +7,7 @@ import {
   updateBusinessLeadStatus,
   updateContactMessageStatus,
 } from './data-api.js'
+import { LIVE_RECORD_EVENT } from './staff-notifications.js'
 
 const byId = (id) => document.getElementById(id)
 const applicationStatuses = ['Nueva', 'En revisión', 'Entrevista', 'Contratada', 'Descartada']
@@ -117,6 +118,31 @@ async function loadData() {
     renderLeads()
   } catch (error) {
     showError(`No pudimos cargar los datos desde Supabase. ${error?.message || 'Inténtalo nuevamente.'}`)
+  }
+}
+
+async function refreshLiveRecord(event) {
+  const kind = event?.detail?.kind
+  try {
+    switch (kind) {
+      case 'applications':
+        state.applications = await listApplications()
+        renderApplications()
+        break
+      case 'messages':
+        state.messages = await listContactMessages()
+        renderMessages()
+        break
+      case 'leads':
+        state.leads = await listBusinessLeads()
+        renderLeads()
+        break
+      default:
+        return
+    }
+    clearError()
+  } catch (error) {
+    showError(`No pudimos actualizar el panel en vivo. ${error?.message || 'Inténtalo nuevamente.'}`)
   }
 }
 
@@ -236,6 +262,7 @@ async function main() {
   byId('recruiter-role').textContent = member.role === 'admin' ? 'Administrador' : 'Reclutador'
   byId('recruiter-email').textContent = member.email || 'Acceso operativo'
   bindEvents()
+  window.addEventListener(LIVE_RECORD_EVENT, refreshLiveRecord)
   await loadData()
 }
 
