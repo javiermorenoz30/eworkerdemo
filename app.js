@@ -34,7 +34,61 @@ button.addEventListener('click', changeLanguage)
 document.querySelectorAll('.filter').forEach((filter) => filter.addEventListener('click', () => { document.querySelectorAll('.filter').forEach((item) => item.classList.remove('active')); filter.classList.add('active'); document.querySelectorAll('#job-list article').forEach((job) => { job.hidden = filter.dataset.filter !== 'all' && job.dataset.area !== filter.dataset.filter }) }))
 document.querySelector('#job-search').addEventListener('input', (event) => { const query = event.target.value.toLowerCase(); document.querySelectorAll('#job-list article').forEach((job) => { job.hidden = !job.textContent.toLowerCase().includes(query) }) })
 document.querySelectorAll('.audience').forEach((audience) => audience.addEventListener('click', () => { document.querySelectorAll('.audience').forEach((item) => item.classList.remove('active')); audience.classList.add('active'); document.querySelector('[name=audience]').value = audience.dataset.audience }))
-document.querySelector('#contact-form').addEventListener('submit', (event) => { event.preventDefault(); document.querySelector('#form-note').textContent = locale === 'es' ? 'Gracias. Tu mensaje está listo para ser enviado al equipo de eWorker360.' : 'Thank you. Your message is ready to be sent to the eWorker360 team.'; event.currentTarget.reset() })
+document.querySelector('#contact-form').addEventListener('submit', async (event) => {
+  event.preventDefault()
+  const form = event.currentTarget
+  const submit = form.querySelector('button[type="submit"]')
+  const note = document.querySelector('#form-note')
+  const values = Object.fromEntries(new FormData(form).entries())
+  const id = crypto.randomUUID()
+
+  if (submit) submit.disabled = true
+  if (note) note.textContent = locale === 'es' ? 'Enviando mensaje…' : 'Sending message…'
+
+  try {
+    const { notifySubmission, submitBusinessLead, submitContactMessage } = await import('./data-api.js')
+    let notificationType
+
+    if (values.audience === 'Empresa') {
+      await submitBusinessLead({
+        id,
+        company_name: '',
+        contact_name: values.name,
+        email: values.email,
+        subject: values.subject,
+        message: values.message,
+      })
+      notificationType = 'business_lead'
+    } else {
+      await submitContactMessage({
+        id,
+        name: values.name,
+        email: values.email,
+        subject: values.subject,
+        message: values.message,
+      })
+      notificationType = 'contact_message'
+    }
+
+    if (note) note.textContent = locale === 'es' ? 'Gracias. Tu mensaje fue enviado al equipo de eWorker360.' : 'Thank you. Your message was sent to the eWorker360 team.'
+    form.reset()
+    document.querySelectorAll('.audience').forEach((item) => {
+      item.classList.toggle('active', item.dataset.audience === 'Empresa')
+    })
+    const audienceInput = form.querySelector('[name=audience]')
+    if (audienceInput) audienceInput.value = 'Empresa'
+
+    try {
+      await notifySubmission(notificationType, id)
+    } catch {
+      // El mensaje ya quedó guardado. El correo es una notificación secundaria.
+    }
+  } catch {
+    if (note) note.textContent = locale === 'es' ? 'No pudimos enviar tu mensaje. Tus datos siguen en el formulario; inténtalo nuevamente.' : 'We could not send your message. Your information is still in the form; please try again.'
+  } finally {
+    if (submit) submit.disabled = false
+  }
+})
 document.querySelectorAll('.job-list .round-link').forEach((link) => { link.href = 'application.html'; link.target = '_blank'; link.rel = 'noopener' })
 const mainNavigation = document.querySelector('.site-header nav')
 const jobsNavigationLink = mainNavigation?.querySelector('a[href="#vacantes"]')
@@ -127,4 +181,3 @@ if (!reducedMotion) {
 
 if (document.readyState === 'complete') scheduleNonCritical()
 else window.addEventListener('load', scheduleNonCritical, { once: true })
-
