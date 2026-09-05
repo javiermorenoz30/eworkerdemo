@@ -23,6 +23,8 @@
 !/data-api.js
 !/landing-content.js
 !/landing-api.js
+!/landing-renderer.js
+!/landing-bootstrap.js
 !/reset-password.js
 !/supabase-client.js
 !/supabase-config.js
