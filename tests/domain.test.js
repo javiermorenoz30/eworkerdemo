@@ -19,23 +19,46 @@ test('applicationMetrics counts pipeline states', () => {
   ]), { total: 4, newCount: 1, progress: 2, hired: 1 })
 })
 
-test('buildApplicationRecord keeps all answers and normalized summary fields', () => {
-  const record = buildApplicationRecord({
+test('buildApplicationRecord keeps complete sensitive and work-history answers with normalized summary fields', () => {
+  const values = {
     position: 'Ventas',
     fullName: 'Persona Demo',
     email: 'demo@example.com',
     whatsapp: '+10000000000',
+    birthDate: '1990-01-01',
     cedula: 'TEST-ID',
     financialAssets: 'TEST-AMOUNT',
-  }, '11111111-1111-4111-8111-111111111111')
+    justiceIssues: 'No',
+    job1Company: 'Empresa 1',
+    job1LastDate: '2025-01',
+    job1ExitReason: 'Cambio profesional',
+    job2Company: 'Empresa 2',
+    job2LastDate: '2024-01',
+    job2ExitReason: 'Fin de contrato',
+    job3Company: 'Empresa 3',
+    job3LastDate: '2023-01',
+    job3ExitReason: 'Mudanza',
+  }
+  const record = buildApplicationRecord(values, '11111111-1111-4111-8111-111111111111')
 
   assert.equal(record.id, '11111111-1111-4111-8111-111111111111')
   assert.equal(record.full_name, 'Persona Demo')
   assert.equal(record.email, 'demo@example.com')
   assert.equal(record.phone, '+10000000000')
   assert.equal(record.role_applied, 'Ventas')
+  assert.equal(record.answers.birthDate, '1990-01-01')
   assert.equal(record.answers.cedula, 'TEST-ID')
   assert.equal(record.answers.financialAssets, 'TEST-AMOUNT')
+  assert.equal(record.answers.justiceIssues, 'No')
+  assert.equal(record.answers.job1Company, 'Empresa 1')
+  assert.equal(record.answers.job1LastDate, '2025-01')
+  assert.equal(record.answers.job1ExitReason, 'Cambio profesional')
+  assert.equal(record.answers.job2Company, 'Empresa 2')
+  assert.equal(record.answers.job2LastDate, '2024-01')
+  assert.equal(record.answers.job2ExitReason, 'Fin de contrato')
+  assert.equal(record.answers.job3Company, 'Empresa 3')
+  assert.equal(record.answers.job3LastDate, '2023-01')
+  assert.equal(record.answers.job3ExitReason, 'Mudanza')
   assert.equal('status' in record, false)
   assert.equal('internal_note' in record, false)
 })
