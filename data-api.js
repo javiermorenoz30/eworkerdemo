@@ -86,6 +86,10 @@ export async function inviteStaff(name, email, role) {
   return data
 }
 
+export async function inviteRecruiter(name, email) {
+  return inviteStaff(name, email, 'recruiter')
+}
+
 export async function deleteOperationalRecord(type, id) {
   const { data, error } = await supabase.functions.invoke('manage-records', {
     body: { action: 'delete', type, id },
