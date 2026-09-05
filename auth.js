@@ -132,4 +132,15 @@ async function initializeLoginPage() {
   })
 }
 
+async function initializeStaffDashboardEnhancements() {
+  if (document.getElementById('staff-form')) {
+    await import('./admin-manager-actions.js')
+  }
+
+  if (document.querySelector('#logout') && (document.querySelector('[data-view]') || document.querySelector('[data-recruiter-view]'))) {
+    await import('./staff-notification-bootstrap.js')
+  }
+}
+
 initializeLoginPage()
+initializeStaffDashboardEnhancements().catch(() => {})

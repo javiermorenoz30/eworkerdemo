@@ -78,9 +78,21 @@ export async function updateProfile(id, patch) {
   if (error) throw error
 }
 
-export async function inviteRecruiter(name, email) {
+export async function inviteStaff(name, email, role) {
   const { data, error } = await supabase.functions.invoke('manage-staff', {
-    body: { action: 'invite', name, email },
+    body: { action: 'invite', name, email, role },
+  })
+  if (error) throw error
+  return data
+}
+
+export async function inviteRecruiter(name, email) {
+  return inviteStaff(name, email, 'recruiter')
+}
+
+export async function deleteOperationalRecord(type, id) {
+  const { data, error } = await supabase.functions.invoke('manage-records', {
+    body: { action: 'delete', type, id },
   })
   if (error) throw error
   return data

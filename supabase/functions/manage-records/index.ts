@@ -2,9 +2,14 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders, isAllowedOrigin, jsonResponse } from '../_shared/cors.ts'
 import { getSupabaseSecretKey, getSupabaseUrl } from '../_shared/supabase-env.ts'
 
-const inviteRedirect = 'https://eworkerdemo.zencontroller.workers.dev/reset-password.html'
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const managerRoles = ['admin', 'boss']
-const allowedRoles = ['admin', 'boss', 'recruiter']
+const resourceTables = {
+  contact_message: 'contact_messages',
+  business_lead: 'business_leads',
+} as const
+
+type ResourceType = keyof typeof resourceTables
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
@@ -29,42 +34,31 @@ Deno.serve(async (req) => {
       .eq('id', userData.user.id)
       .single()
 
-    if (profileError || !managerRoles.includes(callerProfile?.role) || callerProfile?.active !== true) {
+    if (profileError || callerProfile?.active !== true || !managerRoles.includes(callerProfile.role)) {
       return jsonResponse(req, { error: 'Manager access required' }, 403)
     }
 
     const payload = await req.json().catch(() => null)
     const action = String(payload?.action || '')
-    const name = String(payload?.name || '').trim()
-    const email = String(payload?.email || '').trim().toLowerCase()
-    const role = String(payload?.role || 'recruiter')
+    const type = String(payload?.type || '') as ResourceType
+    const id = String(payload?.id || '')
 
-    if (action !== 'invite') return jsonResponse(req, { error: 'Unsupported action' }, 400)
-    if (!allowedRoles.includes(role)) return jsonResponse(req, { error: 'Invalid staff role' }, 400)
-    if (name.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return jsonResponse(req, { error: 'Valid name and email are required' }, 400)
+    if (action !== 'delete') return jsonResponse(req, { error: 'Unsupported action' }, 400)
+    if (!(type in resourceTables) || !uuidPattern.test(id)) {
+      return jsonResponse(req, { error: 'Invalid record reference' }, 400)
     }
 
-    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-      data: { full_name: name, role },
-      redirectTo: inviteRedirect,
-    })
+    const { data, error } = await adminClient
+      .from(resourceTables[type])
+      .delete()
+      .eq('id', id)
+      .select('id')
+      .maybeSingle()
 
-    if (inviteError || !inviteData?.user) {
-      return jsonResponse(req, { error: inviteError?.message || 'Could not create invitation' }, 400)
-    }
+    if (error) return jsonResponse(req, { error: 'Could not delete record' }, 500)
+    if (!data) return jsonResponse(req, { error: 'Record not found' }, 404)
 
-    const { error: upsertError } = await adminClient.from('profiles').upsert({
-      id: inviteData.user.id,
-      email,
-      full_name: name,
-      role,
-      active: true,
-    }, { onConflict: 'id' })
-
-    if (upsertError) return jsonResponse(req, { error: 'Invitation created but profile could not be saved' }, 500)
-
-    return jsonResponse(req, { ok: true, user_id: inviteData.user.id, role })
+    return jsonResponse(req, { ok: true, id })
   } catch (error) {
     return jsonResponse(req, { error: error instanceof Error ? error.message : 'Unexpected server error' }, 500)
   }

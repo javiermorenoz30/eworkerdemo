@@ -21,6 +21,9 @@
 !/auth.js
 !/domain.js
 !/data-api.js
+!/admin-manager-actions.js
+!/staff-notifications.js
+!/staff-notification-bootstrap.js
 !/landing-content.js
 !/landing-api.js
 !/landing-renderer.js
