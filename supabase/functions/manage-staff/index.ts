@@ -4,6 +4,7 @@ import { getSupabaseSecretKey, getSupabaseUrl } from '../_shared/supabase-env.ts
 
 const inviteRedirect = 'https://javiermorenoz30.github.io/eworkerdemo/reset-password.html'
 const managerRoles = ['admin', 'boss']
+const allowedRoles = ['admin', 'boss', 'recruiter']
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
@@ -36,14 +37,16 @@ Deno.serve(async (req) => {
     const action = String(payload?.action || '')
     const name = String(payload?.name || '').trim()
     const email = String(payload?.email || '').trim().toLowerCase()
+    const role = String(payload?.role || 'recruiter')
 
     if (action !== 'invite') return jsonResponse(req, { error: 'Unsupported action' }, 400)
+    if (!allowedRoles.includes(role)) return jsonResponse(req, { error: 'Invalid staff role' }, 400)
     if (name.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return jsonResponse(req, { error: 'Valid name and email are required' }, 400)
     }
 
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-      data: { full_name: name },
+      data: { full_name: name, role },
       redirectTo: inviteRedirect,
     })
 
@@ -55,13 +58,13 @@ Deno.serve(async (req) => {
       id: inviteData.user.id,
       email,
       full_name: name,
-      role: 'recruiter',
+      role,
       active: true,
     }, { onConflict: 'id' })
 
     if (upsertError) return jsonResponse(req, { error: 'Invitation created but profile could not be saved' }, 500)
 
-    return jsonResponse(req, { ok: true, user_id: inviteData.user.id })
+    return jsonResponse(req, { ok: true, user_id: inviteData.user.id, role })
   } catch (error) {
     return jsonResponse(req, { error: error instanceof Error ? error.message : 'Unexpected server error' }, 500)
   }
