@@ -84,3 +84,27 @@ test('staff realtime notifications are authenticated-only, opt-in and generic', 
   assert.match(auth, /import\(['"]\.\/staff-notification-bootstrap\.js['"]\)/)
   assert.doesNotMatch(publicApp, /staff-notifications|staff-notification-bootstrap/)
 })
+
+test('authenticated dashboards refresh the affected list on realtime inserts without a page reload', async () => {
+  const [module, bootstrap, admin, recruiter] = await Promise.all([
+    read('staff-notifications.js'),
+    read('staff-notification-bootstrap.js'),
+    read('admin.js'),
+    read('recruiter.js'),
+  ])
+
+  assert.match(module, /export const LIVE_RECORD_EVENT\s*=\s*['"]eworker360:staff-record-insert['"]/)
+  assert.match(module, /window\.dispatchEvent\(new CustomEvent\(LIVE_RECORD_EVENT,\s*\{\s*detail:\s*\{\s*kind:\s*config\.kind/s)
+  assert.match(bootstrap, /start\(profile\)/)
+  assert.doesNotMatch(bootstrap, /if \(areStaffNotificationsEnabled\(\)\) start\(profile\)/)
+
+  assert.match(admin, /addEventListener\(LIVE_RECORD_EVENT,\s*refreshLiveRecord\)/)
+  assert.match(admin, /case ['"]messages['"]:[\s\S]*listContactMessages\(\)[\s\S]*renderMessages\(\)/)
+  assert.match(admin, /case ['"]leads['"]:[\s\S]*listBusinessLeads\(\)[\s\S]*renderLeads\(\)/)
+  assert.match(admin, /case ['"]applications['"]:[\s\S]*listApplications\(\)[\s\S]*renderApplications\(\)/)
+
+  assert.match(recruiter, /addEventListener\(LIVE_RECORD_EVENT,\s*refreshLiveRecord\)/)
+  assert.match(recruiter, /case ['"]messages['"]:[\s\S]*listContactMessages\(\)[\s\S]*renderMessages\(\)/)
+  assert.match(recruiter, /case ['"]leads['"]:[\s\S]*listBusinessLeads\(\)[\s\S]*renderLeads\(\)/)
+  assert.match(recruiter, /case ['"]applications['"]:[\s\S]*listApplications\(\)[\s\S]*renderApplications\(\)/)
+})
