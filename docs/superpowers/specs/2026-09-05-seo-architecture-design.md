@@ -1,0 +1,338 @@
+# eWorker360 SEO Architecture Design
+
+Date: 2026-09-05
+Domain: https://eworker360dominicana.com/
+
+## Goal
+
+Build an SEO architecture that supports two equally important growth tracks:
+
+1. Candidates in the Dominican Republic searching for jobs, especially call center, customer service, sales, support, and related roles.
+2. BPO/nearshore buyers in the United States, with priority on Florida, New York, New Jersey, Massachusetts, and Pennsylvania.
+
+The strategy must increase discoverability without keyword stuffing, doorway pages, thin regional pages, or duplicate translated content.
+
+## Core SEO model
+
+Use a bilingual, indexable URL structure with separate Spanish and English pages.
+
+- Spanish: `/es/`
+- English: `/en/`
+
+Each page must have its own canonical URL, language declaration, metadata, and reciprocal `hreflang` entries where a genuine alternate-language equivalent exists.
+
+The current language-switching JavaScript may remain as a UX convenience during transition, but indexable SEO pages must not rely on a single URL whose content changes only client-side.
+
+## Audience split
+
+### Dominican Republic: employment intent
+
+Primary candidate market: Dominican Republic only.
+
+Target topic families include:
+
+- empleos en República Dominicana
+- empleos en La Vega
+- trabajos en La Vega
+- call center empleos
+- trabajo call center
+- servicio al cliente empleos
+- televentas empleos
+- ventas por teléfono
+- soporte al cliente
+- busco empleo
+- busco trabajo
+- vacantes en República Dominicana
+- oportunidades de empleo
+
+Do not create U.S. employment landing pages unless eWorker360 genuinely begins recruiting for U.S.-based roles.
+
+### United States: commercial BPO intent
+
+Create a strong national commercial hub and five state-focused pages.
+
+Primary hub:
+
+- `/en/bpo-united-states/`
+
+State pages:
+
+- `/en/bpo-florida/`
+- `/en/bpo-new-york/`
+- `/en/bpo-new-jersey/`
+- `/en/bpo-massachusetts/`
+- `/en/bpo-pennsylvania/`
+
+Each state page must be materially distinct. It must contain state-specific business context, target industries or use cases, operational/time-zone relevance, nearshore advantages from the Dominican Republic, service fit, FAQs, and a state-specific CTA. These pages must not be simple city/state keyword substitutions.
+
+## Proposed information architecture
+
+### Spanish candidate cluster
+
+- `/es/`
+- `/es/empleos/`
+- `/es/empleos/call-center/`
+- `/es/empleos/servicio-al-cliente/`
+- `/es/empleos/televentas/`
+- `/es/empleos/soporte/`
+- `/es/empleos/la-vega/`
+- `/es/empleos/republica-dominicana/`
+- `/es/vacantes/`
+- `/es/vacantes/<slug-de-vacante>/` for real, active jobs only
+
+The employment pages should answer distinct search intent. They are not keyword variants of one template.
+
+### English buyer cluster
+
+- `/en/`
+- `/en/bpo/`
+- `/en/nearshore-outsourcing/`
+- `/en/customer-service-outsourcing/`
+- `/en/telesales-outsourcing/`
+- `/en/call-center-services/`
+- `/en/bpo-united-states/`
+- five state pages listed above
+
+### Spanish buyer support pages
+
+Spanish can also support Dominican/local business searches:
+
+- `/es/bpo/`
+- `/es/nearshoring/`
+- `/es/call-center-para-empresas/`
+- `/es/servicio-al-cliente-outsourcing/`
+
+These should support local and regional commercial discovery without competing with the English U.S. cluster.
+
+## Content strategy
+
+Each page gets one primary intent and several related semantic terms. Copy must be written for humans first and should naturally answer the query behind the page.
+
+Important rules:
+
+- No keyword stuffing.
+- No pages created solely to repeat a geographic keyword.
+- No machine-like literal translation where search intent differs between Spanish and English.
+- No fake job pages.
+- No stale `JobPosting` schema after a vacancy closes.
+- No claims about clients, outcomes, certifications, staffing scale, salaries, locations, or performance unless verified.
+
+Recommended informational topics for future expansion include:
+
+- Qué es un call center y cómo aplicar
+- Cómo conseguir empleo en servicio al cliente
+- Consejos para entrevistas de call center
+- Diferencia entre BPO, outsourcing, nearshore y offshore
+- Why outsource customer service to the Dominican Republic
+- Nearshore vs offshore customer support
+- How Dominican Republic BPO supports U.S. operations
+- Telesales outsourcing best practices
+
+These resource pages should link into the appropriate job or commercial conversion page.
+
+## On-page SEO requirements
+
+Every indexable page must include:
+
+- unique `<title>`
+- unique meta description
+- one clear H1
+- logical H2/H3 structure
+- self-referencing canonical
+- correct `lang` attribute
+- Open Graph metadata
+- Twitter/X metadata
+- indexable body copy rendered in HTML
+- descriptive internal links
+- descriptive image `alt` text where appropriate
+- breadcrumbs where the page is below a hub
+
+Titles and descriptions should be written per page intent rather than generated by blindly concatenating keywords.
+
+## International targeting
+
+Use reciprocal `hreflang` only between genuine equivalents.
+
+Example:
+
+- Spanish BPO page ↔ English BPO page
+- Spanish nearshoring page ↔ English nearshore page
+
+Pages that do not have a true equivalent do not need a forced alternate.
+
+Use:
+
+- `es-DO` for Dominican Spanish pages
+- `en-US` for U.S.-oriented English pages
+- optional `x-default` on the root/home experience if it becomes a language selector or neutral entry point
+
+## Structured data
+
+Use JSON-LD where it accurately describes visible content.
+
+### Site-wide
+
+- `Organization`
+- `WebSite`
+- `BreadcrumbList` on hierarchical pages
+
+### Employment
+
+Use `JobPosting` only for real active vacancies. Include accurate fields such as:
+
+- title
+- description
+- datePosted
+- validThrough when known
+- employmentType when known
+- hiringOrganization
+- jobLocation
+- applicantLocationRequirements if relevant
+
+Remove or mark expired postings appropriately when a job closes.
+
+### Local business
+
+Where accurate, expand organization/local-business signals with the verified La Vega location, telephone, email, website, and social profiles.
+
+### FAQ
+
+FAQ markup should only be used when the questions and answers are visibly present on the page and genuinely useful. It should not be repeated site-wide just to increase schema volume.
+
+## Internal linking
+
+The site should form clear topic clusters.
+
+Candidate examples:
+
+`/es/empleos/` → role pages → active vacancy pages → application flow
+
+Commercial examples:
+
+`/en/bpo/` → service pages → U.S. hub → state pages → business contact CTA
+
+The home pages should link directly to the primary candidate and buyer hubs. Resource articles should link contextually into these hubs.
+
+Avoid orphan pages.
+
+## Sitemap and robots
+
+Expand `sitemap.xml` to include all canonical, indexable public pages.
+
+Exclude:
+
+- staff/admin dashboards
+- login/reset flows that should not rank
+- duplicate utility URLs
+- obsolete or redirected pages
+- closed vacancy pages if they no longer provide useful evergreen content
+
+`robots.txt` should continue to expose the sitemap and should not be used as the primary method to remove sensitive/private pages from search. Private/authenticated routes should be protected by authentication and should generally carry `noindex` where publicly reachable HTML shells exist.
+
+## Migration and URL rules
+
+The canonical production domain is:
+
+`https://eworker360dominicana.com/`
+
+All production canonicals, `hreflang`, JSON-LD URLs, Open Graph URLs, sitemap URLs, and absolute internal references should use this domain.
+
+If legacy public URLs are replaced by the new `/es/` and `/en/` structure, preserve equity with permanent redirects where technically possible.
+
+Avoid redirect chains. Every old URL should redirect directly to its final destination.
+
+## Search Console and indexing
+
+After production migration:
+
+1. Verify the domain property in Google Search Console.
+2. Submit the production sitemap.
+3. Inspect the home page, employment hub, BPO hub, and representative state pages.
+4. Request indexing only after canonicals, redirects, and content are final.
+5. Monitor indexing, crawl errors, duplicate canonicals, Core Web Vitals, and search queries.
+
+Also configure Bing Webmaster Tools because U.S. B2B search visibility is relevant.
+
+## Local SEO
+
+Strengthen the La Vega entity consistently across the website and business profiles.
+
+Use the same verified business name, address, phone, website, and operating information everywhere. Avoid creating fake location pages for cities where eWorker360 does not have a real location.
+
+If a Google Business Profile exists, link the production website and keep its business information aligned with the site schema.
+
+## Performance and technical SEO
+
+Maintain or improve Core Web Vitals during SEO expansion.
+
+Requirements:
+
+- keep primary content server-deliverable/static HTML where practical
+- optimize large images and keep WebP/modern formats
+- specify image dimensions to reduce layout shift
+- avoid adding heavy SEO plugins or runtime dependencies for static metadata
+- maintain mobile usability
+- prevent render-blocking additions where avoidable
+- keep navigation crawlable with normal `<a href>` links
+
+## Measurement
+
+Track SEO performance separately for the two funnels.
+
+Candidate funnel:
+
+- organic landing sessions to employment pages
+- application-start rate
+- completed applications
+- queries by job category and Dominican location
+
+Commercial funnel:
+
+- organic landing sessions to BPO/service/state pages
+- business-contact conversions
+- qualified leads
+- queries by BPO/service/state intent
+
+SEO success should be evaluated on qualified applications and qualified commercial leads, not rankings alone.
+
+## Initial implementation scope
+
+The first implementation should focus on the foundation and highest-value landing pages rather than publishing dozens of pages at once.
+
+Phase 1 should include:
+
+- `/es/` and `/en/` indexable language homes
+- `/es/empleos/`
+- `/es/empleos/call-center/`
+- `/es/empleos/servicio-al-cliente/`
+- `/es/empleos/la-vega/`
+- `/es/empleos/republica-dominicana/`
+- `/en/bpo/`
+- `/en/nearshore-outsourcing/`
+- `/en/customer-service-outsourcing/`
+- `/en/bpo-united-states/`
+- the five priority U.S. state pages
+- improved site-wide metadata and structured data
+- `hreflang` and canonical implementation
+- expanded sitemap
+- explicit `noindex` coverage for non-search application/admin/auth surfaces where appropriate
+- internal linking between hubs and landing pages
+- automated SEO regression tests for canonical, title, description, `hreflang`, sitemap inclusion, and private-page indexing rules
+
+Further job categories and editorial resources should be added after the foundation is live and Search Console begins showing query data.
+
+## Acceptance criteria
+
+The SEO architecture is ready for implementation when:
+
+- every planned Phase 1 page has one clear audience and search intent
+- Spanish employment content targets Dominican candidates only
+- English commercial content targets U.S. buyers
+- state pages are unique enough to stand independently
+- all indexable pages have unique metadata and canonicals
+- bilingual equivalents have valid reciprocal `hreflang`
+- sitemap contains canonical public URLs only
+- admin/auth/private pages are not intentionally indexable
+- real vacancy pages can support valid `JobPosting` schema
+- the implementation preserves the production domain consistently
+- tests can detect regressions in the technical SEO rules above
