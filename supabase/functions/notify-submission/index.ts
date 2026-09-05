@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import nodemailer from 'npm:nodemailer@^9'
 import { corsHeaders, isAllowedOrigin, jsonResponse } from '../_shared/cors.ts'
 import { getSupabaseSecretKey, getSupabaseUrl } from '../_shared/supabase-env.ts'
 
@@ -51,9 +52,9 @@ Deno.serve(async (req) => {
   const id = String(payload?.id || '')
   if (!(type in typeConfig) || !uuidPattern.test(id)) return jsonResponse(req, { error: 'Invalid submission reference' }, 400)
 
-  const resendKey = Deno.env.get('RESEND_API_KEY')
-  const fromEmail = Deno.env.get('RESEND_FROM_EMAIL')
-  if (!resendKey || !fromEmail) return jsonResponse(req, { error: 'Email provider is not configured' }, 503)
+  const smtpUser = String(Deno.env.get('GMAIL_SMTP_USER') || '').trim()
+  const smtpPassword = String(Deno.env.get('GMAIL_APP_PASSWORD') || '').replace(/\s+/g, '')
+  if (!smtpUser || !smtpPassword) return jsonResponse(req, { error: 'Email provider is not configured' }, 503)
 
   try {
     const adminClient = createClient(getSupabaseUrl(), getSupabaseSecretKey(), {
@@ -78,24 +79,30 @@ Deno.serve(async (req) => {
     if (settingsError || !settings?.notification_email) return jsonResponse(req, { error: 'Notification settings are missing' }, 503)
 
     const subjectPrefix = String(settings.email_subject || 'Nueva solicitud desde eWorker360').trim()
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resendKey}`,
-        'Content-Type': 'application/json',
-        'Idempotency-Key': `eworker360/${type}/${id}`,
+    const transport = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: smtpUser,
+        pass: smtpPassword,
       },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [settings.notification_email],
-        subject: `${subjectPrefix} · ${config.label}`,
-        html: emailBody(type, record as Record<string, unknown>),
-      }),
     })
 
-    if (!response.ok) {
-      const detail = await response.text()
-      console.error('Resend delivery failed', response.status, detail.slice(0, 500))
+    try {
+      await new Promise<void>((resolve, reject) => {
+        transport.sendMail({
+          from: `eWorker360 <${smtpUser}>`,
+          to: settings.notification_email,
+          subject: `${subjectPrefix} · ${config.label}`,
+          html: emailBody(type, record as Record<string, unknown>),
+        }, (error) => {
+          if (error) reject(error)
+          else resolve()
+        })
+      })
+    } catch (error) {
+      console.error('Gmail SMTP delivery failed', error instanceof Error ? error.message : String(error))
       return jsonResponse(req, { error: 'Notification delivery failed' }, 502)
     }
 
