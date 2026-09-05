@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "ignore": "7.0.8",
+    "linkedom": "0.18.13",
     "wrangler": "4.129.0"
   }
 }

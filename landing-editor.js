@@ -388,12 +388,19 @@ export async function initLandingEditor() {
     busy = value
     shell.querySelectorAll('input, textarea, select, button').forEach((control) => {
       if (value) {
-        control.dataset.busyDisabled = control.disabled ? 'true' : 'false'
+        // Rendering during a pending operation can lock the same control twice.
+        // Preserve its state from before the first lock, including boundary arrows.
+        if (control.dataset.busyDisabled === undefined) {
+          control.dataset.busyDisabled = control.disabled ? 'true' : 'false'
+        }
         control.disabled = value
       } else {
         control.disabled = control.dataset.busyDisabled === 'true'
         delete control.dataset.busyDisabled
       }
+    })
+    list.querySelectorAll('.landing-section-card').forEach((card) => {
+      card.draggable = !value && loaded
     })
   }
   const rememberMedia = (value) => collectImagePaths(value).forEach((path) => orphanMedia.add(path))
@@ -441,8 +448,8 @@ export async function initLandingEditor() {
       copy.append(title, subtitle)
 
       const tools = create('div', 'landing-section-tools')
-      const up = makeButton('↑', 'move-up'); up.disabled = busy || index === 0
-      const down = makeButton('↓', 'move-down'); down.disabled = busy || index === sections.length - 1
+      const up = makeButton('↑', 'move-up'); up.disabled = index === 0
+      const down = makeButton('↓', 'move-down'); down.disabled = index === sections.length - 1
       const visible = makeButton(section.visible === false ? 'Mostrar' : 'Ocultar', 'toggle-visible')
       const edit = makeButton(openSections.has(section.id) ? 'Cerrar' : 'Editar', 'edit')
       const menu = create('details', 'landing-section-menu')
