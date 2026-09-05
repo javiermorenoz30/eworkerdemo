@@ -12,6 +12,7 @@
 !/privacy.html
 !/terms.html
 !/styles.css
+!/seo-pages.css
 !/admin.css
 !/staff.css
 !/app.js
@@ -34,6 +35,8 @@
 !/supabase-config.js
 !/robots.txt
 !/sitemap.xml
+!/es/
+!/en/
 !/assets/
 !/assets/logoewrker.png
 !/assets/icons8-whatsapp.gif
