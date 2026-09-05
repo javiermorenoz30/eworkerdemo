@@ -32,6 +32,8 @@ Referencia: [configuración oficial de assets y .assetsignore](https://developer
 
 ### Dominio y correo finales
 
+El origen `https://eworkerdemo.zencontroller.workers.dev` está autorizado en el código CORS. Para aplicarlo al backend existente, volver a desplegar `notify-submission` y `manage-staff`. En Supabase Auth, añadir `https://eworkerdemo.zencontroller.workers.dev/reset-password.html` a Redirect URLs; conservar GitHub Pages durante la transición. El despliegue de Workers no publica automáticamente las funciones de Supabase.
+
 Antes de usar un dominio nuevo (incluido `workers.dev`), añadir **su origen exacto** a `supabase/functions/_shared/cors.ts` y volver a desplegar ambas Edge Functions. Añadir también su URL de recuperación en Supabase Auth. No permitir globalmente `*.workers.dev`. GitHub Pages y los dominios corporativos ya enumerados se conservan.
 
 Al recibir los datos finales del cliente, actualizar el dominio/DNS, las URLs de Auth, `ADMIN_PORTAL_URL`, las URLs canónicas/sitemap/robots y los datos públicos de contacto. Configurar el destinatario en `site_settings.notification_email` y verificar el remitente corporativo en Resend. Las credenciales se mantienen en Supabase, nunca en Wrangler ni en el frontend. La entrega real del correo y el login requieren una prueba en el dominio publicado; las pruebas de código no sustituyen esa comprobación.
