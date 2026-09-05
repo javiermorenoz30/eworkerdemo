@@ -1,6 +1,7 @@
 import { supabase } from './supabase-client.js'
 
 const PREFERENCE_KEY = 'eworker360.staffNotifications.enabled'
+export const LIVE_RECORD_EVENT = 'eworker360:staff-record-insert'
 const STAFF_ROLES = ['admin', 'boss', 'recruiter']
 const EVENT_CONFIG = {
   applications: { kind: 'applications', title: 'Llegó una nueva solicitud' },
@@ -78,7 +79,7 @@ export function areStaffNotificationsEnabled() {
 }
 
 export function initStaffNotifications({ profile, onOpen } = {}) {
-  if (!allowedProfile(profile) || !preferenceEnabled()) {
+  if (!allowedProfile(profile)) {
     return { enabled: false, destroy() {} }
   }
 
@@ -86,6 +87,10 @@ export function initStaffNotifications({ profile, onOpen } = {}) {
 
   const handleInsert = (table) => () => {
     const config = EVENT_CONFIG[table]
+    window.dispatchEvent(new CustomEvent(LIVE_RECORD_EVENT, {
+      detail: { kind: config.kind },
+    }))
+    if (!preferenceEnabled()) return
     showToast(config, onOpen)
     showSystemNotification(config, onOpen)
   }
