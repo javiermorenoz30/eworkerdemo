@@ -4,12 +4,16 @@ import {
   LANDING_TEMPLATES,
   createSection,
   duplicateSection,
+  fieldsForSection,
   localized,
   localizedValue,
   moveSection,
   normalizeSectionPositions,
   removeSection,
 } from '../landing-content.js'
+
+const keys = (fields = []) => fields.map((field) => field.key)
+const itemKeys = (fields = [], arrayKey) => keys(fields.find((field) => field.key === arrayKey)?.itemFields || [])
 
 test('English content falls back to Spanish', () => {
   assert.deepEqual(localized('Hola', 'Hello'), { es: 'Hola', en: 'Hello' })
@@ -61,4 +65,44 @@ test('every approved landing template has safe editor fields and deterministic d
     assert.deepEqual(first, second)
     assert.notEqual(first.content, second.content)
   }
+})
+
+test('editor schemas expose all visible seed content instead of hiding important fields', () => {
+  const hero = fieldsForSection({ type: 'hero', content: {} })
+  assert.deepEqual(keys(hero), ['eyebrow', 'title', 'highlight', 'description', 'primaryButton', 'secondaryButton', 'image', 'location', 'locationSuffix', 'scrollHint'])
+
+  const routes = fieldsForSection({ type: 'routes', content: {} })
+  assert.deepEqual(itemKeys(routes, 'items'), ['number', 'title', 'description', 'link'])
+
+  const services = fieldsForSection({ type: 'cards', content: { variant: 'services' } })
+  assert.deepEqual(itemKeys(services, 'items'), ['number', 'title', 'description'])
+  assert.deepEqual(itemKeys(services, 'details'), ['title', 'description'])
+
+  const objectives = fieldsForSection({ type: 'cards', content: { variant: 'objectives' } })
+  assert.deepEqual(itemKeys(objectives, 'items'), ['icon', 'title', 'description'])
+
+  const timeline = fieldsForSection({ type: 'cards', content: { variant: 'timeline' } })
+  assert.deepEqual(itemKeys(timeline, 'items'), ['value', 'title', 'description'])
+
+  const business = fieldsForSection({ type: 'text_image', content: { variant: 'business' } })
+  assert.deepEqual(keys(business), ['eyebrow', 'title', 'highlight', 'description', 'bullets', 'methodTitle', 'steps', 'button'])
+
+  const culture = fieldsForSection({ type: 'text_image', content: { variant: 'culture' } })
+  assert.deepEqual(keys(culture), ['image', 'imageCaption', 'eyebrow', 'title', 'highlight', 'description', 'vision', 'values'])
+
+  const general = fieldsForSection({ type: 'text_image', content: { variant: 'general' } })
+  assert.deepEqual(keys(general), ['image', 'eyebrow', 'title', 'highlight', 'description', 'bullets', 'button'])
+
+  const jobs = fieldsForSection({ type: 'jobs', content: {} })
+  assert.deepEqual(itemKeys(jobs, 'filters'), ['value', 'label'])
+  assert.deepEqual(itemKeys(jobs, 'items'), ['area', 'badge', 'title', 'description', 'href'])
+
+  const gallery = fieldsForSection({ type: 'gallery', content: {} })
+  assert.deepEqual(itemKeys(gallery, 'items'), ['image', 'meta', 'title', 'description', 'link'])
+
+  assert.equal(business.find((field) => field.key === 'bullets')?.type, 'localizedArray')
+  assert.equal(business.find((field) => field.key === 'steps')?.type, 'localizedArray')
+  assert.equal(culture.find((field) => field.key === 'values')?.type, 'localizedArray')
+  assert.equal(fieldsForSection({ type: 'cta', content: {} }).find((field) => field.key === 'perks')?.type, 'localizedArray')
+  assert.equal(culture.find((field) => field.key === 'vision')?.type, 'group')
 })
