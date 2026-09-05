@@ -4,75 +4,73 @@
 
 Convert the current static GitHub Pages demo into a production-capable application where employment applications, contact messages, business leads, staff access, statuses, notes, and site settings are shared across devices and persisted in Supabase instead of browser `localStorage`.
 
-The existing visual design should remain substantially unchanged. The work is primarily a backend, authentication, persistence, and security migration.
+The existing visual design remains substantially unchanged. This is primarily a backend, authentication, persistence, and security migration.
 
 ## Current State
 
-The site is hosted as a static GitHub Pages application. The current demo store in `admin-data.js` persists applications, staff accounts, settings, and statuses in browser `localStorage`. `staff-auth.js` also keeps the staff session locally and validates an email/access-code pair against locally stored staff data. The public employment form currently writes a summarized application into that local store, and the public contact form only displays a success message without sending data to a server.
+The site is a static GitHub Pages application. `admin-data.js` currently persists applications, staff accounts, settings, statuses, and notes in browser `localStorage`. `staff-auth.js` also keeps the staff session locally and validates an email/access-code pair against locally stored staff data. The public employment form writes a summarized application into that same local store. The public contact form only displays a success message and does not persist or send its data.
 
-This means the current admin and recruiter flows are browser-local demos rather than a shared production system.
+Therefore the current admin/recruiter behavior is a browser-local demo, not a shared production system.
 
-## Chosen Architecture
+## Architecture
 
-The production architecture will be:
+The production architecture is:
 
-- **GitHub Pages** for the static frontend.
-- **Supabase Postgres** for persistent application data.
-- **Supabase Auth** for admin and recruiter authentication using email + password.
-- **Supabase Row Level Security (RLS)** for authorization and protection of sensitive candidate data.
-- **Supabase Edge Functions** for server-side email notifications so provider secrets are never exposed in the public repository.
-- **Cloudflare DNS** later for the custom domain; domain cutover is outside the backend implementation itself.
+- **GitHub Pages**: static public site and dashboard frontend.
+- **Supabase Postgres**: persistent shared data.
+- **Supabase Auth**: admin/recruiter email + password authentication.
+- **Supabase Row Level Security (RLS)**: authorization and protection of candidate data.
+- **Supabase Edge Functions**: server-side staff invitations and email notifications.
+- **Cloudflare DNS**: custom-domain cutover only after the application is production-ready.
 
-The browser will contain only the Supabase project URL and the public publishable/anon key. The `service_role` key, database password, SMTP password, and email-provider API keys must never be committed to the repository or embedded in frontend JavaScript.
+The browser may contain only the Supabase Project URL and public Publishable/Anon key. The `service_role` key, database password, SMTP password, and email-provider API keys must never be committed to the repository or embedded in frontend JavaScript.
 
-## Roles and Access Model
-
-Two application roles are required:
+## Roles
 
 ### Admin
 
-An admin can:
+An active admin can:
 
-- Read the full contents of employment applications.
-- Read sensitive fields included in the application form.
+- Read the complete employment application, including sensitive fields.
 - Update application status and internal notes.
-- Read and update contact messages.
-- Read and update business leads.
+- Read contact messages and business leads.
+- Update operational status for messages and business leads.
 - Read and update site settings.
-- Read the staff/profile directory.
-- Manage role and active-state metadata for staff through an admin-controlled workflow.
-
-Authentication identities themselves remain owned by Supabase Auth.
+- Read all staff profiles.
+- Invite recruiters.
+- Change recruiter/admin role metadata and active/paused state.
 
 ### Recruiter
 
-A recruiter can:
+An active recruiter can:
 
-- Read the full contents of employment applications, including sensitive fields.
+- Read the complete employment application, including sensitive fields.
 - Update application status and internal notes.
-- Read contact messages.
-- Read business leads.
-- Read their own profile.
+- Read contact messages and business leads.
+- Update operational status for messages and business leads.
+- Read their own staff profile.
 
-A recruiter cannot manage roles, site-wide configuration, or other users' authorization metadata.
+A recruiter cannot change site settings, invite users, change roles, or manage another user's authorization metadata.
 
 ### Public visitor
 
 An unauthenticated visitor can:
 
-- Create an employment application.
-- Create a contact message.
-- Create a business lead.
+- Submit an employment application.
+- Submit the existing contact form.
 
-An unauthenticated visitor cannot read, update, or delete any of those records after submission.
+The existing contact form's `audience` field determines persistence:
+
+- `Empresa` -> create a `business_leads` record.
+- `Talento` -> create a `contact_messages` record. Employment applications continue through `application.html`.
+
+A public visitor cannot read, update, or delete any stored record after submission.
 
 ## Data Model
 
 ### `profiles`
 
-Purpose: application-level metadata for Supabase Auth users.
-
-Columns:
+Application-level authorization metadata for Supabase Auth users.
 
 - `id uuid primary key references auth.users(id) on delete cascade`
 - `email text not null`
@@ -82,13 +80,11 @@ Columns:
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
 
-The user's password is never stored in this table.
+Passwords are owned only by Supabase Auth and are never stored in this table.
 
 ### `applications`
 
-Purpose: employment applications submitted from the public application form.
-
-Columns:
+Employment applications submitted from `application.html`.
 
 - `id uuid primary key default gen_random_uuid()`
 - `created_at timestamptz not null default now()`
@@ -101,48 +97,40 @@ Columns:
 - `answers jsonb not null default '{}'::jsonb`
 - `internal_note text not null default ''`
 
-The `answers` JSON object stores the complete form submission, including the current form's sensitive fields such as national ID/cedula, date of birth, financial information, and justice-related answers, because the client requires the complete form to be visible to both admins and recruiters.
-
-These values must never be returned to unauthenticated users after insertion.
+`answers` stores the complete current application form, including fields the client requires such as cedula/national ID, date of birth, financial information, and justice-related answers. These values are readable only by active authenticated admins/recruiters.
 
 ### `contact_messages`
 
-Purpose: general messages sent from the public contact form.
-
-Columns:
+General/talent messages from the existing public contact form when `audience = 'Talento'`.
 
 - `id uuid primary key default gen_random_uuid()`
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
 - `name text not null`
 - `email text not null`
-- `phone text not null default ''`
-- `audience text not null default ''`
+- `subject text not null default ''`
 - `message text not null`
 - `status text not null default 'Nuevo' check (status in ('Nuevo', 'En revisión', 'Respondido', 'Cerrado'))`
 
 ### `business_leads`
 
-Purpose: proposals or company-side commercial inquiries.
-
-Columns:
+Company-side proposals/inquiries from the existing public contact form when `audience = 'Empresa'`.
 
 - `id uuid primary key default gen_random_uuid()`
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
-- `company_name text not null`
+- `company_name text not null default ''`
 - `contact_name text not null`
 - `email text not null`
-- `phone text not null default ''`
-- `service_interest text not null default ''`
-- `message text not null default ''`
+- `subject text not null default ''`
+- `message text not null`
 - `status text not null default 'Nuevo' check (status in ('Nuevo', 'Contactado', 'Propuesta enviada', 'Negociación', 'Ganado', 'Descartado'))`
+
+The current form does not ask for company name, so `company_name` remains blank in the initial migration. A dedicated company-name field is not required for launch.
 
 ### `site_settings`
 
-Purpose: shared site/admin configuration that is currently stored in the local demo store.
-
-Columns:
+Shared configuration currently represented in the local demo store.
 
 - `id bigint primary key`
 - `brand_name text not null`
@@ -156,267 +144,268 @@ Columns:
 - `auto_reply boolean not null default true`
 - `updated_at timestamptz not null default now()`
 
-The implementation will use a singleton row with `id = 1`.
+The implementation uses a singleton row with `id = 1`.
 
-## Authorization Helpers
+## Database Authorization Helpers
 
-Database-side helper functions will centralize authorization checks instead of duplicating role logic in every RLS policy.
+SQL helper functions centralize role checks for RLS:
 
-Required helpers:
+- `public.is_active_staff()` -> active `profiles` row exists for `auth.uid()`.
+- `public.is_admin()` -> active profile exists with `role = 'admin'`.
+- `public.is_recruiter_or_admin()` -> active profile exists with `role in ('admin', 'recruiter')`.
 
-- `is_active_staff()` returns true when `auth.uid()` has an active `profiles` row.
-- `is_admin()` returns true when `auth.uid()` has an active `profiles` row with `role = 'admin'`.
-- `is_recruiter_or_admin()` returns true when the authenticated user is active and has role `admin` or `recruiter`.
+They must be safe for RLS usage and must not expose profile data to callers.
 
-These functions must be safe for use inside RLS policies and should avoid exposing profile data to callers.
+## RLS and Column Privileges
 
-## Row Level Security Policies
-
-RLS must be enabled on all application-owned tables.
+RLS is enabled on all application-owned tables.
 
 ### `profiles`
 
-- Active authenticated users may read their own profile.
-- Admins may read all profiles.
-- Only admins may update profile role and active state through authenticated database access.
-- Public users have no profile access.
+- Public: no access.
+- Active authenticated user: read own profile.
+- Admin: read all profiles and update profile metadata.
+- Recruiter: cannot update authorization metadata.
 
 ### `applications`
 
-- `anon` may `INSERT` rows.
-- `anon` may not `SELECT`, `UPDATE`, or `DELETE` rows.
-- Active admins and recruiters may `SELECT` all rows.
-- Active admins and recruiters may update `status`, `internal_note`, and other application fields required by the panel.
-- Delete access is admin-only if deletion is implemented; the initial UI does not need a delete action.
+- Public/anon: `INSERT` only.
+- Public insert policy requires `status = 'Nueva'` and `internal_note = ''` so anonymous callers cannot create a record already marked hired/reviewed or inject internal notes.
+- Public/anon: no `SELECT`, `UPDATE`, or `DELETE`.
+- Active admin/recruiter: `SELECT` all application fields.
+- Active admin/recruiter: update only operational columns required by the UI (`status`, `internal_note`, `updated_at`) through database column privileges plus RLS.
+- Initial UI has no delete action. Delete is not granted to recruiters; admin deletion is not required for first production release.
 
 ### `contact_messages`
 
-- `anon` may `INSERT` rows.
-- Active admins and recruiters may `SELECT` rows.
-- Active admins and recruiters may update message status.
-- Public read/update/delete access is denied.
+- Public/anon: `INSERT` only with `status = 'Nuevo'`.
+- Public/anon: no read/update/delete.
+- Active admin/recruiter: read all.
+- Active admin/recruiter: update only `status` and `updated_at`.
 
 ### `business_leads`
 
-- `anon` may `INSERT` rows.
-- Active admins and recruiters may `SELECT` rows.
-- Active admins and recruiters may update lead status and operational fields.
-- Public read/update/delete access is denied.
+- Public/anon: `INSERT` only with `status = 'Nuevo'`.
+- Public/anon: no read/update/delete.
+- Active admin/recruiter: read all.
+- Active admin/recruiter: update only `status` and `updated_at`.
 
 ### `site_settings`
 
-- Active staff may read the shared settings needed by authenticated dashboards.
-- Only admins may update settings.
-- Public access is not required for the first migration unless the public landing page is explicitly changed to read settings dynamically.
+- Public: no direct database access in the initial migration.
+- Active staff: read.
+- Admin: update.
+- Recruiter: no update.
 
-## Authentication Flow
+The public landing page keeps its existing static content for launch; making the public page dynamically consume `site_settings` is not part of this migration.
+
+## Authentication
 
 ### Login
 
-`staff-login.html` will change from email + temporary local access code to email + password.
+`staff-login.html` changes from email + local access code to email + password.
 
-Flow:
+1. User submits email/password.
+2. Frontend calls `supabase.auth.signInWithPassword()`.
+3. App loads the user's `profiles` row.
+4. Missing/inactive profile -> immediately sign out and display an authorization error.
+5. `admin` -> `admin.html`.
+6. `recruiter` -> `recruiter.html`.
 
-1. User submits email and password.
-2. Frontend calls `supabase.auth.signInWithPassword`.
-3. After a successful Supabase session is created, the app loads the matching `profiles` row.
-4. If no active profile exists, the app signs the user out and displays an authorization error.
-5. If `role = 'admin'`, redirect to `admin.html`.
-6. If `role = 'recruiter'`, redirect to `recruiter.html`.
+### Route guards
 
-### Route guarding
+- `admin.html`: active authenticated admin only.
+- `recruiter.html`: active authenticated admin or recruiter.
+- Unauthorized or expired session -> `staff-login.html`.
 
-Opening `admin.html` or `recruiter.html` directly must not grant access.
-
-- `admin.html` requires an authenticated active profile with role `admin`.
-- `recruiter.html` requires an authenticated active profile with role `admin` or `recruiter`.
-- Unauthorized users are redirected to `staff-login.html`.
-
-Frontend route guards improve user experience, but RLS remains the actual data-security boundary.
+Frontend guards are for user experience. RLS is the real security boundary.
 
 ### Logout
 
-Logout calls `supabase.auth.signOut()` and redirects to `staff-login.html`.
+Call `supabase.auth.signOut()` then redirect to `staff-login.html`.
 
-### Password recovery
+### Password recovery / invitation setup
 
-A password-reset control will request a Supabase recovery email. The reset landing page will allow an authenticated recovery session to call `supabase.auth.updateUser({ password })`.
+A dedicated `reset-password.html` supports both password recovery and first-time invited staff setup. After Supabase establishes the recovery/invite session, the page calls `supabase.auth.updateUser({ password })` and then routes the user to login/dashboard.
 
-The GitHub Pages URL is used in Supabase Auth URL configuration until the custom domain is activated. After DNS cutover, the production domain will become the primary Site URL and allowed redirect URLs will include the production host.
+Until the custom domain is active, Supabase Auth Site URL/redirect URLs use the GitHub Pages deployment. After domain cutover, `https://eworker360dominicana.com/` becomes the production Site URL and is added to allowed redirects.
 
-## Frontend Data Access
+## Staff Invitation Flow
 
-A shared Supabase client module will replace the current local store as the production data boundary.
+Future recruiters are invited from the admin dashboard without exposing `service_role` to the browser.
 
-Recommended files/responsibilities:
+1. Admin submits recruiter name/email from the team section.
+2. Frontend invokes an authenticated Supabase Edge Function, `manage-staff`.
+3. The function verifies the caller JWT and re-checks that caller's active profile is `admin`.
+4. The function uses its server-side `SUPABASE_SERVICE_ROLE_KEY` secret to call the Supabase Admin Auth API and invite the email.
+5. The function creates/upserts the matching `profiles` row with `role = 'recruiter'`, `active = true`.
+6. Recruiter opens the invitation link, sets a password on `reset-password.html`, then signs in normally.
 
-- `supabase-config.js`: public project URL and publishable/anon key only.
-- `supabase-client.js`: creates and exports the browser Supabase client.
-- `auth.js`: session lookup, profile lookup, role guards, login, logout, password recovery.
-- `data-api.js`: CRUD functions for applications, contact messages, business leads, settings, and profiles.
+Only the Edge Function can use the service-role credential. The browser never receives it.
 
-Existing UI files (`admin.js`, `recruiter.js`, `application.html`, `app.js`) should consume those modules rather than directly calling `localStorage`.
+## Frontend Modules
 
-The local demo store may remain temporarily only for non-sensitive visual demo data during migration, but it must not remain the source of truth for production applications, staff accounts, candidate data, messages, or leads.
+The production data boundary is split into focused browser modules:
+
+- `supabase-config.js`: Project URL and public Publishable/Anon key only.
+- `supabase-client.js`: initializes the Supabase browser client.
+- `auth.js`: login, logout, current profile, role guards, password recovery.
+- `data-api.js`: application/message/lead/settings/profile database operations.
+
+Existing UI files consume these modules instead of directly calling `localStorage`.
+
+Production `localStorage` may be used only for non-sensitive presentation preferences. It must not contain candidate submissions, staff identities, access codes/passwords, messages, leads, statuses, or internal notes.
 
 ## Employment Application Flow
 
-The complete public employment form remains visually intact.
+The full current form remains visually intact.
 
-On submit:
+1. Validate browser-required fields.
+2. Build `full_name`, `email`, `phone`, `role_applied`, and the complete `answers` JSON object.
+3. Insert exactly one `applications` row using the public Supabase client. The frontend does not send `status` or `internal_note`.
+4. Only after the insert succeeds, show success and reset the form.
+5. On failure, preserve all entered values and display a retry message.
+6. After persistence, invoke `notify-submission` with the new record ID and type `application`.
+7. If notification fails, keep the successful application and show no false database failure; email is secondary to persistence.
 
-1. Validate required browser fields.
-2. Build a normalized record containing `full_name`, `email`, `phone`, `role_applied`, and the complete form answers object.
-3. Insert exactly one row into `applications` using the public Supabase client.
-4. Only after the database insert succeeds, show the success state and reset the form.
-5. If insertion fails, preserve all form values and display a retry message.
-6. Trigger a server-side email notification after persistence is confirmed.
+The public client never performs a `.select()` on the inserted application and has no RLS permission to read it back.
 
-The user must never receive the inserted row's sensitive contents back from a public select query.
+## Public Contact / Business Flow
 
-## Contact Message Flow
+The existing `#contact-form` remains one form and uses its current `audience` switch.
 
-The existing contact form will stop pretending to send data.
+### `audience = 'Empresa'`
 
-On submit:
+- `name` -> `business_leads.contact_name`
+- `email` -> `business_leads.email`
+- `subject` -> `business_leads.subject`
+- `message` -> `business_leads.message`
+- `company_name` remains `''` in the initial migration.
+- After persistence, invoke email notification with type `business_lead`.
 
-1. Validate input.
-2. Insert one row into `contact_messages`.
-3. On success, display confirmation and reset the form.
-4. On failure, keep the user's entered values and show an error message.
-5. Trigger a server-side notification to the configured team email after persistence succeeds.
+### `audience = 'Talento'`
 
-## Business Lead Flow
+- `name` -> `contact_messages.name`
+- `email` -> `contact_messages.email`
+- `subject` -> `contact_messages.subject`
+- `message` -> `contact_messages.message`
+- After persistence, invoke email notification with type `contact_message`.
 
-Company-side inquiries will be normalized into `business_leads` rather than being mixed with candidate applications.
+For either path, the form is reset only after database persistence. On failure, values remain for retry.
 
-On submit:
+## Admin Dashboard
 
-1. Validate company/contact fields.
-2. Insert a lead row.
-3. Confirm only after persistence.
-4. Trigger a server-side notification after persistence.
+The current visual style remains. The admin dashboard receives shared data from Supabase and includes:
 
-## Admin Dashboard Behavior
+- application counts and pipeline;
+- application search/filter/sort;
+- full candidate answers;
+- status updates;
+- internal notes;
+- a contact-messages view;
+- a business-leads view;
+- admin-only shared settings editing;
+- team profile list;
+- invite recruiter action;
+- pause/reactivate recruiter action;
+- role display and admin-only role management.
 
-The existing admin visual design will be preserved.
+Changes persist across devices and are visible after refresh. Realtime subscriptions are not required for v1.
 
-The dashboard will load data from Supabase and support:
+## Recruiter Dashboard
 
-- Counts for total, new, in-progress, and hired applications.
-- Application list filtering/search/sorting.
-- Candidate detail view with full form answers.
-- Application status updates.
-- Internal notes.
-- Contact-message review.
-- Business-lead review.
-- Shared settings for admin-only edits.
-- Staff/profile listing and role/active-state management for admins.
+The recruiter dashboard includes:
 
-Because data is server-persisted, changes made by one authenticated device must be visible to another after refresh. Realtime subscriptions are optional and are not required for the first production version.
+- application search/filter;
+- full candidate answers;
+- application status updates;
+- internal notes;
+- contact-messages view and status updates;
+- business-leads view and status updates.
 
-## Recruiter Dashboard Behavior
-
-The recruiter UI keeps its current purpose but reads shared Supabase data.
-
-Recruiters can:
-
-- Search/filter employment applications.
-- Open the full submitted answers.
-- Change application status.
-- Add/update internal notes if the recruiter UI exposes that control.
-- Review contact messages and business leads if those sections are exposed in the recruiter UI.
-
-Recruiters cannot manage site settings, roles, or account authorization.
+Recruiters do not see settings/team-management controls and cannot change authorization data through the database even if they manipulate frontend code.
 
 ## Email Notifications
 
-Email notification delivery must be server-side.
+Initial team notifications:
 
-Initial notifications:
+- new application -> configured notification email;
+- new talent/contact message -> configured notification email;
+- new business lead -> configured notification email.
 
-- New employment application -> notification to `info@eworker360dominicana.com` or the value in `site_settings.notification_email`.
-- New contact message -> notification to the same configured team email.
-- New business lead -> notification to the configured team email.
+The `notify-submission` Edge Function receives only `{ type, id }`, validates the allowed type, uses the server-side Supabase client to fetch that single newly-created row, then sends the notification through the selected email provider. Provider credentials are Supabase Function Secrets.
 
-The preferred implementation is a Supabase Edge Function that receives only the inserted record ID/type, re-reads the permitted record server-side, and sends an email through the chosen email provider.
+The function must not return sensitive record contents to the public caller. Basic duplicate suppression is required so repeated calls for the same record do not intentionally send unlimited duplicate notifications.
 
-Provider credentials are stored as Supabase function secrets and never exposed to GitHub Pages.
-
-Automatic confirmation emails to candidates and external contacts are deferred until inbound team notifications are verified in production.
+Automatic confirmation emails to candidates/external contacts are deferred until team notifications have been verified in production.
 
 ## Error Handling
 
 Public forms:
 
-- Disable duplicate submission while a request is pending.
-- Do not clear a form unless the database confirms persistence.
-- Display a human-readable failure message on network/database errors.
-- Allow retry without re-entering the form.
+- disable the submit button while pending;
+- never clear the form before persistence succeeds;
+- preserve values after a network/database error;
+- show a clear retry message;
+- prevent double-submit from one active browser request.
 
-Authenticated screens:
+Authenticated pages:
 
-- Expired/missing session -> redirect to login.
-- Valid session but inactive/missing profile -> sign out and display an authorization message.
-- Database query failure -> show a recoverable dashboard error rather than rendering stale local demo data as if it were production data.
-- Failed status/note update -> preserve the visible previous state and display an error.
+- missing/expired session -> login;
+- missing/inactive profile -> sign out + authorization error;
+- database read failure -> visible recoverable error, not stale local demo data;
+- failed status/note update -> restore prior UI state and show error.
 
-Email failures:
+Email failure never rolls back the stored application/message/lead. Supabase Postgres is the source of truth.
 
-- Must not roll back or lose the underlying form submission.
-- The database is the source of truth; email is a secondary notification channel.
+## Sensitive Data and Privacy
 
-## Privacy and Sensitive Data
+The client requires the complete form to be available to both admins and recruiters. Therefore:
 
-The client requires the complete employment form, including sensitive fields, to remain available to both admins and recruiters.
+- candidate submissions are stored in Supabase only, not production `localStorage`;
+- anonymous reads are blocked by RLS;
+- only active authenticated admins/recruiters can read applications;
+- sensitive application content is not logged to the browser console;
+- no backend secret is embedded in frontend code.
 
-Therefore:
+The client must separately confirm its legal basis, privacy notice, retention period, and operational handling for national ID, date of birth, financial information, and justice-related information. Technical access controls do not replace those obligations.
 
-- Candidate data is stored only in Supabase, not production `localStorage`.
-- RLS prevents anonymous reads.
-- Only authenticated active admin/recruiter profiles can read applications.
-- Sensitive application content must not be logged to browser console in production.
-- Secrets must never be embedded in frontend code.
-- The client should separately confirm its legal/privacy basis and retention policy for collecting national ID, date of birth, financial information, and justice-related information. The technical implementation will enforce access restrictions but does not substitute for the client's privacy/compliance obligations.
+## First Admin Bootstrap
 
-## Initial Admin Bootstrap
+The first Supabase Auth user already exists.
 
-The first Supabase Auth user already exists and will become the first admin.
+1. Copy that user's UUID from Supabase Authentication -> Users.
+2. Run the migration SQL.
+3. Insert a matching `profiles` row using the UUID, email, display name, `role = 'admin'`, `active = true`.
+4. Verify login via the new production staff login.
+5. Create future recruiters through the admin invitation workflow, not local access codes.
 
-Bootstrap steps:
+## User-Supplied Supabase Configuration
 
-1. Obtain that user's UUID from Supabase Authentication -> Users.
-2. Run the database migration.
-3. Insert a `profiles` row using that UUID, the user's email, desired display name, `role = 'admin'`, and `active = true`.
-4. Confirm the admin can sign in through the production login screen before creating recruiter accounts.
+The user will:
 
-Additional recruiter identities are created in Supabase Auth and then given matching `profiles` rows with `role = 'recruiter'`.
+1. run the approved migration in Supabase SQL Editor;
+2. provide the non-secret **Project URL**;
+3. provide the non-secret browser **Publishable/Anon key**;
+4. provide the UUID of the existing admin Auth user;
+5. keep database password, `service_role`, SMTP credentials, and email-provider secrets private;
+6. later add the email-provider API key directly to Supabase Function Secrets.
 
-## Supabase Configuration Required from the User
+## Expected Repository Changes
 
-The user must perform these actions in their Supabase project:
+Likely modified:
 
-1. Run the approved SQL migration in the Supabase SQL Editor.
-2. Provide the non-secret **Project URL**.
-3. Provide the non-secret **Publishable/Anon key** intended for browser usage.
-4. Provide the UUID of the already-created admin user.
-5. Keep the database password, `service_role` key, and all provider secrets private.
-6. Later, add the email-provider secret directly in Supabase Function Secrets rather than sharing it in chat or committing it to GitHub.
+- `admin-data.js`
+- `staff-auth.js`
+- `staff-login.html`
+- `admin.html`
+- `admin.js`
+- `recruiter.html`
+- `recruiter.js`
+- `application.html`
+- `app.js`
 
-## Repository Changes Expected During Implementation
-
-Existing files likely modified:
-
-- `admin-data.js` — removed as the production source of truth or reduced to non-sensitive demo compatibility only.
-- `staff-auth.js` — replaced by Supabase Auth logic.
-- `staff-login.html` — changed to email/password login and recovery UI.
-- `admin.js` — reads/writes Supabase data.
-- `recruiter.js` — reads/writes Supabase data.
-- `application.html` — submits to Supabase rather than `localStorage`.
-- `app.js` — sends contact/business submissions to Supabase.
-- `admin.html` and/or `recruiter.html` — updated script includes and any new message/lead views required by the existing UI.
-
-New files expected:
+New:
 
 - `supabase-config.js`
 - `supabase-client.js`
@@ -424,41 +413,41 @@ New files expected:
 - `data-api.js`
 - `reset-password.html`
 - `supabase/migrations/<timestamp>_production_backend.sql`
-- `supabase/functions/notify-submission/index.ts` or equivalent Edge Function source
+- `supabase/functions/manage-staff/index.ts`
+- `supabase/functions/notify-submission/index.ts`
 
-Exact file decomposition may be refined in the implementation plan, but the security and data boundaries defined in this design must remain unchanged.
+Exact file-level steps are defined in the implementation plan; the security/data boundaries in this design are fixed requirements.
 
-## Testing and Acceptance Criteria
+## Acceptance Criteria
 
-The migration is complete only when all of the following pass:
-
-1. A public visitor can submit a complete employment application from one device.
-2. The application is visible to an admin from a different authenticated device.
-3. The full submitted answers, including sensitive fields, are visible to both admin and recruiter.
-4. A recruiter can update an application status and an admin sees the persisted change after refresh.
-5. Internal notes persist across devices.
-6. A public visitor cannot read `applications`, `contact_messages`, `business_leads`, `profiles`, or admin-only settings through the public client.
-7. A recruiter cannot alter admin-only profile roles or site settings.
-8. An unauthenticated visitor opening `admin.html` or `recruiter.html` is redirected to login and cannot query protected data.
-9. The contact form persists a message instead of only showing a fake confirmation.
-10. Business inquiries persist separately from employment applications.
-11. Failed public submissions keep the user's form data on screen for retry.
-12. Database persistence succeeds even if the email notification provider is unavailable.
-13. No production candidate or staff data is written to `localStorage`.
-14. No `service_role`, database password, SMTP password, or email-provider secret appears in repository files.
-15. GitHub Pages continues to render the current public site and dashboard styling without a major visual regression.
+1. A public visitor submits the complete employment form from one device.
+2. An admin on another device sees that application after authentication.
+3. Admin and recruiter can see the complete submitted answers, including the required sensitive fields.
+4. Recruiter updates application status/note and admin sees the persisted change after refresh.
+5. Public/anon cannot read applications, messages, leads, profiles, or settings using the public client.
+6. Recruiter cannot update profiles/roles/settings even by manipulating browser requests.
+7. Unauthenticated access to `admin.html`/`recruiter.html` redirects to login and protected database queries remain blocked.
+8. `Empresa` contact submissions persist in `business_leads` and appear in admin/recruiter views.
+9. `Talento` contact submissions persist in `contact_messages` and appear in admin/recruiter views.
+10. Public form failure preserves entered values.
+11. Database persistence remains successful if email notification delivery fails.
+12. Admin can invite a recruiter without exposing `service_role` to the browser.
+13. Invited recruiter can set a password and log in.
+14. No production candidate/staff data or access codes are stored in `localStorage`.
+15. No `service_role`, database password, SMTP password, or email-provider secret exists in repository files.
+16. Existing public-site and dashboard styling continues to render without a major visual regression.
 
 ## Deployment Order
 
-Production cutover should happen in this order:
+1. Create schema, helper functions, privileges, RLS, singleton settings row, and initial admin profile in Supabase.
+2. Connect authentication and route guards on the current GitHub Pages URL.
+3. Connect admin/recruiter shared data flows.
+4. Connect employment form and existing contact form.
+5. Verify cross-device persistence and RLS.
+6. Configure staff-invite Edge Function.
+7. Configure notification Edge Function and email provider.
+8. Run end-to-end acceptance tests.
+9. Only then point `eworker360dominicana.com` to the GitHub Pages site through Cloudflare DNS.
+10. Preserve existing MX/TXT/SPF/DKIM/DMARC records during domain cutover.
 
-1. Create database schema, functions, RLS, and initial admin profile in Supabase.
-2. Connect frontend authentication and protected dashboards on the existing GitHub Pages URL.
-3. Connect employment, contact, and business forms.
-4. Verify cross-device persistence and RLS behavior.
-5. Configure and verify team email notifications.
-6. Complete end-to-end acceptance testing.
-7. Only after the application is production-ready, point `eworker360dominicana.com` to the new GitHub Pages site through Cloudflare DNS.
-8. Preserve existing MX/TXT/SPF/DKIM/DMARC records during domain cutover so corporate email remains operational.
-
-The old website may remain on its previous hosting without the domain; deleting the old hosting is not a requirement for this migration.
+The old website may remain on its previous hosting without the domain. Deleting that hosting is not part of this migration.
