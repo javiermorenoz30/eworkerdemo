@@ -26,6 +26,15 @@ try {
     .filter(line => line.startsWith('!/') && !line.endsWith('/'))
     .map(line => line.slice(2))
   let bytes = 0
+  for (const page of ['admin', 'recruiter', 'staff-login', 'reset-password', 'application', 'faq', 'privacy', 'terms', 'index']) {
+    for (const suffix of ['', '/']) {
+      const response = await fetch(`${origin}/${page}${suffix}?route_check=1`)
+      assert.equal(response.status, 200, `${page}${suffix} must resolve`)
+      assert.equal(new URL(response.url).pathname, `/${page}.html`)
+      assert.equal(new URL(response.url).searchParams.get('route_check'), '1')
+      assert.deepEqual(Buffer.from(await response.arrayBuffer()), await readFile(`${page}.html`))
+    }
+  }
   for (const path of allowlist.filter(path => path !== '_redirects')) {
     const response = await fetch(`${origin}/${path}`)
     assert.equal(response.status, 200, path)
