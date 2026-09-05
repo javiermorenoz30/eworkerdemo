@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { applicationMetrics, buildApplicationRecord, routeForProfile, csvForApplications } from '../domain.js'
+import { applicationMetrics, buildApplicationRecord, routeForProfile, csvForApplications, isManagerProfile } from '../domain.js'
 
 test('routeForProfile sends active admins and recruiters to their dashboard', () => {
   assert.equal(routeForProfile({ role: 'admin', active: true }), 'admin.html')
@@ -8,6 +8,14 @@ test('routeForProfile sends active admins and recruiters to their dashboard', ()
   assert.equal(routeForProfile({ role: 'recruiter', active: false }), null)
   assert.equal(routeForProfile({ role: 'unknown', active: true }), null)
   assert.equal(routeForProfile(null), null)
+})
+
+test('Boss has the same dashboard route and manager status as Admin', () => {
+  assert.equal(routeForProfile({ role: 'boss', active: true }), 'admin.html')
+  assert.equal(isManagerProfile({ role: 'admin', active: true }), true)
+  assert.equal(isManagerProfile({ role: 'boss', active: true }), true)
+  assert.equal(isManagerProfile({ role: 'boss', active: false }), false)
+  assert.equal(isManagerProfile({ role: 'recruiter', active: true }), false)
 })
 
 test('applicationMetrics counts pipeline states', () => {
