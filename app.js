@@ -1,5 +1,3 @@
-import { bootPublishedLanding } from './landing-bootstrap.js'
-
 const scheduleNonCritical = () => {
   const runNonCritical = () => {
     const html = document.documentElement
@@ -259,6 +257,7 @@ const scheduleNonCritical = () => {
 }
 
 async function startLanding() {
+  const { bootPublishedLanding } = await import('./landing-bootstrap.js')
   await bootPublishedLanding()
   if (document.readyState === 'complete') scheduleNonCritical()
   else window.addEventListener('load', scheduleNonCritical, { once: true })
