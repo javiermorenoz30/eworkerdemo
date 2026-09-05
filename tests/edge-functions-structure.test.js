@@ -7,10 +7,11 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 test('function configuration keeps staff management authenticated and notification public', async () => {
   const config = await read('supabase/config.toml')
   assert.match(config, /\[functions\.manage-staff\][\s\S]*verify_jwt\s*=\s*true/)
+  assert.match(config, /\[functions\.manage-records\][\s\S]*verify_jwt\s*=\s*true/)
   assert.match(config, /\[functions\.notify-submission\][\s\S]*verify_jwt\s*=\s*false/)
 })
 
-test('manage-staff verifies manager caller before using server-side invite API', async () => {
+test('manage-staff verifies manager caller and persists an allowed selected role', async () => {
   const code = await read('supabase/functions/manage-staff/index.ts')
   assert.match(code, /Authorization/)
   assert.match(code, /auth\.getUser/)
@@ -20,8 +21,22 @@ test('manage-staff verifies manager caller before using server-side invite API',
   assert.match(code, /inviteUserByEmail/)
   assert.match(code, /reset-password\.html/)
   assert.match(code, /profiles/)
-  assert.match(code, /role:\s*'recruiter'/)
+  assert.match(code, /allowedRoles\s*=\s*\['admin',\s*'boss',\s*'recruiter'\]/)
+  assert.match(code, /Invalid staff role/)
+  assert.match(code, /role,\s*active:\s*true/)
   assert.doesNotMatch(code, /sb_secret_[A-Za-z0-9_-]+/)
+})
+
+test('manage-records verifies active manager before server-side deletion', async () => {
+  const code = await read('supabase/functions/manage-records/index.ts')
+  assert.match(code, /Authorization/)
+  assert.match(code, /auth\.getUser/)
+  assert.match(code, /managerRoles\s*=\s*\['admin',\s*'boss'\]/)
+  assert.match(code, /callerProfile\?\.active\s*!==\s*true/)
+  assert.match(code, /contact_message:\s*'contact_messages'/)
+  assert.match(code, /business_lead:\s*'business_leads'/)
+  assert.match(code, /\.delete\(\)/)
+  assert.doesNotMatch(code, /applications/)
 })
 
 test('notification function fetches server-side and sends through Gmail SMTP', async () => {
