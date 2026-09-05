@@ -1,5 +1,8 @@
 [functions.manage-staff]
 verify_jwt = true
 
+[functions.manage-records]
+verify_jwt = true
+
 [functions.notify-submission]
 verify_jwt = false
