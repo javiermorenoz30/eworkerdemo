@@ -21,6 +21,7 @@
 !/auth.js
 !/domain.js
 !/data-api.js
+!/landing-content.js
 !/reset-password.js
 !/supabase-client.js
 !/supabase-config.js
