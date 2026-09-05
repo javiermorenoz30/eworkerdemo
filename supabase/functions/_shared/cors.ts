@@ -1,5 +1,6 @@
 const allowedOrigins = new Set([
   'https://javiermorenoz30.github.io',
+  'https://eworkerdemo.zencontroller.workers.dev',
   'https://eworker360dominicana.com',
   'https://www.eworker360dominicana.com',
   'http://localhost:3000',

@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "eworkerdemo",
+  "compatibility_date": "2026-09-05",
+  "build": {
+    "command": "npm run build",
+    "watch_dir": ["scripts", "assets"]
+  },
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "none",
+    "not_found_handling": "none"
+  }
+}

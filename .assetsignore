@@ -1,0 +1,33 @@
+# Deny by default, including dependencies, backend code, dotfiles and future files.
+# Keep this explicit list in sync when adding a public page, module or image.
+*
+!/_redirects
+!/index.html
+!/application.html
+!/admin.html
+!/recruiter.html
+!/staff-login.html
+!/reset-password.html
+!/faq.html
+!/privacy.html
+!/terms.html
+!/styles.css
+!/admin.css
+!/staff.css
+!/app.js
+!/application.js
+!/admin.js
+!/recruiter.js
+!/auth.js
+!/domain.js
+!/data-api.js
+!/reset-password.js
+!/supabase-client.js
+!/supabase-config.js
+!/robots.txt
+!/sitemap.xml
+!/assets/
+!/assets/logoewrker.png
+!/assets/icons8-whatsapp.gif
+!/assets/hero-professional.webp
+!/assets/hero-professional.png

@@ -1,6 +1,42 @@
 # eWorker360 Dominicana
 
-Sitio estático de eWorker360 Dominicana preparado para GitHub Pages con backend de producción en Supabase.
+Sitio estático de eWorker360 Dominicana preparado para Cloudflare Workers y GitHub Pages con backend de producción en Supabase.
+
+## Cloudflare Workers: publicación reproducible
+
+`wrangler.jsonc` configura el Worker `eworkerdemo` sin código de servidor. Los archivos mantienen sus rutas `.html` y los recursos inexistentes devuelven 404.
+
+Wrangler publica únicamente `dist/`. Su build copia los archivos enumerados en `.assetsignore` y recrea la carpeta generada para eliminar recursos obsoletos. `.assetsignore` se copia también a `dist/` y **excluye todo por defecto**. No se publican `node_modules`, `.git`, `.github`, `tests`, `docs`, `supabase`, configuración, dependencias ni archivos nuevos sin autorizar. Al añadir una página, módulo o imagen, actualizar la lista y ejecutar las pruebas. No sustituirla por un comodín para todos los archivos JS. `_redirects` sirve `index.html` en `/` manteniendo las rutas `.html` existentes.
+
+Configuración de Workers Builds:
+
+- Rama de producción: `main`.
+- Directorio raíz: repositorio (`/`).
+- Instalación: `npm ci`, con `package-lock.json` versionado.
+- Build: `npm test`; Wrangler ejecuta automáticamente `npm run build` antes de publicar, incluso con el comando de deploy existente.
+- Deploy: `npm run deploy`; el comando existente `npx wrangler deploy` también utiliza la versión local fijada.
+- Wrangler está fijado en `devDependencies`; no omitir las dependencias de desarrollo durante la instalación.
+
+Verificación local/CI:
+
+```bash
+npm ci
+npm test
+npm run check:deploy
+npm run test:assets
+```
+
+La última prueba sirve los archivos con Wrangler, compara su contenido original y confirma respuestas 404 para rutas internas. El dry-run no publica ni certifica por sí solo el despliegue remoto. Para previsualizar: `npm run preview`.
+
+Referencia: [configuración oficial de assets y .assetsignore](https://developers.cloudflare.com/workers/static-assets/binding/).
+
+### Dominio y correo finales
+
+El origen `https://eworkerdemo.zencontroller.workers.dev` está autorizado en el código CORS. Para aplicarlo al backend existente, volver a desplegar `notify-submission` y `manage-staff`. En Supabase Auth, añadir `https://eworkerdemo.zencontroller.workers.dev/reset-password.html` a Redirect URLs; conservar GitHub Pages durante la transición. El despliegue de Workers no publica automáticamente las funciones de Supabase.
+
+Antes de usar un dominio nuevo (incluido `workers.dev`), añadir **su origen exacto** a `supabase/functions/_shared/cors.ts` y volver a desplegar ambas Edge Functions. Añadir también su URL de recuperación en Supabase Auth. No permitir globalmente `*.workers.dev`. GitHub Pages y los dominios corporativos ya enumerados se conservan.
+
+Al recibir los datos finales del cliente, actualizar el dominio/DNS, las URLs de Auth, `ADMIN_PORTAL_URL`, las URLs canónicas/sitemap/robots y los datos públicos de contacto. Configurar el destinatario en `site_settings.notification_email` y verificar el remitente corporativo en Resend. Las credenciales se mantienen en Supabase, nunca en Wrangler ni en el frontend. La entrega real del correo y el login requieren una prueba en el dominio publicado; las pruebas de código no sustituyen esa comprobación.
 
 ## Arquitectura
 
@@ -82,7 +118,7 @@ Las pruebas estructurales y de dominio se ejecutan con:
 npm test
 ```
 
-GitHub Actions ejecuta la misma suite en la rama `supabase-production`.
+GitHub Actions ejecuta la suite, el dry-run y las pruebas HTTP de assets en pull requests y en las ramas `main` y `supabase-production`.
 
 El archivo `supabase/tests/rls-smoke.sql` contiene verificaciones manuales de seguridad para SQL Editor y termina con `rollback`.
 

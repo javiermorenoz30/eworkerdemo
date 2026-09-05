@@ -21,7 +21,7 @@ test('employment form uses stable field names and production module submission',
 })
 
 test('public application persistence inserts without selecting the sensitive row back', async () => {
-  const api = await read('data-api.js')
+  const api = (await read('data-api.js')).replace(/\r\n/g, '\n')
   const match = api.match(/export async function submitApplication\(record\) \{([\s\S]*?)\n\}\n\nexport async function/)
   assert.ok(match, 'submitApplication function was not found')
   const submitApplicationBody = match[1]
