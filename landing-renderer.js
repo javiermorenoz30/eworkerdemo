@@ -24,6 +24,17 @@ function safeLocalizedHtml(value, highlight) {
   return `${escapeHtml(text.slice(0, index))}<em>${escapeHtml(text.slice(index, index + marked.length))}</em>${escapeHtml(text.slice(index + marked.length))}`
 }
 
+function safeHref(value = '#') {
+  const href = String(value || '').trim()
+  if (!href) return '#'
+  if (href.startsWith('#')) return href
+  if (/^(https:\/\/|mailto:|tel:)/i.test(href)) return href
+  if (/^javascript:/i.test(href)) return '#'
+  if (/^[a-z][a-z0-9+.-]*:/i.test(href)) return '#'
+  if (/^(?:\.\.?\/)?[^\s]+$/i.test(href)) return href
+  return '#'
+}
+
 function setLocalized(node, value, locale = 'es') {
   const es = textValue(value, 'es')
   const en = textValue(value, 'en') || es
@@ -72,9 +83,9 @@ function eyebrow(value, locale, prefix = '') {
 
 function linkNode(link, locale, className = '') {
   const node = create('a', className)
-  node.href = String(link?.href || '#')
+  node.href = safeHref(link?.href)
   setLocalized(node, link?.label || '', locale)
-  if (/^https?:\/\//i.test(node.href) || String(link?.href || '').startsWith('http')) {
+  if (/^https:\/\//i.test(node.href)) {
     node.target = '_blank'
     node.rel = 'noopener'
   }
@@ -84,12 +95,16 @@ function linkNode(link, locale, className = '') {
 function imageNode(image, locale, className = '') {
   const node = create('img', className)
   const path = String(image?.path || '')
+  const esAlt = textValue(image?.alt || '', 'es')
+  const enAlt = textValue(image?.alt || '', 'en') || esAlt
   node.src = publicLandingImageUrl(path)
-  node.alt = textValue(image?.alt || '', locale)
+  node.dataset.altEs = esAlt
+  node.dataset.altEn = enAlt
+  node.alt = locale === 'en' ? enAlt : esAlt
   node.loading = 'lazy'
   let usedFallback = false
   node.addEventListener('error', () => {
-    const fallback = String(image?.fallback || '')
+    const fallback = String(image?.fallback || image?.fallbackPath || '')
     if (fallback && !usedFallback) {
       usedFallback = true
       node.src = publicLandingImageUrl(fallback)
@@ -154,7 +169,7 @@ function renderRoutes(content, locale) {
   const grid = create('div', 'route-grid')
   for (const item of content.items || []) {
     const card = create('a', `route-card ${item.variant || ''}`.trim())
-    card.href = item.link?.href || '#'
+    card.href = safeHref(item.link?.href)
     const number = create('span')
     number.textContent = item.number || ''
     card.append(number, localizedNode('h3', item.title, locale), localizedNode('p', item.description, locale), localizedNode('b', item.link?.label, locale))
@@ -243,10 +258,7 @@ function renderBusiness(content, locale) {
   body.append(eyebrow(content.eyebrow, locale, '03'), titleNode('h2', content, locale), localizedNode('p', content.description, locale, 'lede'))
   if (content.bullets?.length) {
     const list = create('ul', 'checklist')
-    for (const item of content.bullets) {
-      const li = localizedNode('li', item.text || item, locale)
-      list.append(li)
-    }
+    for (const item of content.bullets) list.append(localizedNode('li', item.text || item, locale))
     body.append(list)
   }
   const process = create('aside', 'process-card')
@@ -264,6 +276,28 @@ function renderBusiness(content, locale) {
   }
   if (content.button?.label) process.append(linkNode(content.button, locale, 'button button-outline'))
   section.append(body, process)
+  return section
+}
+
+function renderGeneralTextImage(content, locale) {
+  const section = create('section', 'culture section-pad text-image-section')
+  if (content.id) section.id = content.id
+
+  if (content.image?.path) {
+    const photo = create('div', 'team-photo')
+    photo.append(imageNode(content.image, locale))
+    section.append(photo)
+  }
+
+  const body = create('div')
+  body.append(eyebrow(content.eyebrow, locale), titleNode('h2', content, locale), localizedNode('p', content.description, locale))
+  if (content.bullets?.length) {
+    const list = create('ul', 'checklist')
+    for (const item of content.bullets) list.append(localizedNode('li', item.text || item, locale))
+    body.append(list)
+  }
+  if (content.button?.label) body.append(linkNode(content.button, locale, 'button'))
+  section.append(body)
   return section
 }
 
@@ -288,11 +322,7 @@ function renderCulture(content, locale) {
   }
   if (content.values?.length) {
     const values = create('div', 'values')
-    content.values.forEach((value) => {
-      const chip = create('span')
-      chip.textContent = typeof value === 'string' ? value : textValue(value, locale)
-      values.append(chip)
-    })
+    content.values.forEach((value) => values.append(localizedNode('span', value, locale)))
     body.append(values)
   }
   section.append(body)
@@ -301,7 +331,8 @@ function renderCulture(content, locale) {
 
 function renderTextImage(content, locale) {
   if (content.variant === 'culture') return renderCulture(content, locale)
-  return renderBusiness(content, locale)
+  if (content.variant === 'business') return renderBusiness(content, locale)
+  return renderGeneralTextImage(content, locale)
 }
 
 function renderJobs(content, locale) {
@@ -339,7 +370,7 @@ function renderJobs(content, locale) {
     if (item.badge) body.append(localizedNode('span', item.badge, locale))
     body.append(localizedNode('h3', item.title, locale), localizedNode('p', item.description, locale))
     const apply = create('a', 'round-link')
-    apply.href = item.href || 'application.html'
+    apply.href = safeHref(item.href || 'application.html')
     apply.textContent = '↗'
     apply.setAttribute('aria-label', `${locale === 'en' ? 'Apply to' : 'Aplicar a'} ${textValue(item.title, locale)}`)
     article.append(body, apply)
@@ -351,7 +382,7 @@ function renderJobs(content, locale) {
 }
 
 function renderCta(content, locale) {
-  const section = create('section', `${content.variant === 'employment' ? 'employment' : 'employment'} section-pad`)
+  const section = create('section', 'employment section-pad')
   section.id = content.id || 'aplicar'
   const copy = create('div', 'employment-copy')
   copy.append(eyebrow(content.eyebrow, locale, '06'), titleNode('h2', content, locale), localizedNode('p', content.description, locale))
@@ -420,9 +451,9 @@ function renderContact(content, locale) {
   const links = create('div', 'contact-details')
   for (const item of content.details || []) {
     const link = create('a')
-    link.href = item.href || '#'
+    link.href = safeHref(item.href)
     link.textContent = item.label || ''
-    if (/^https?:\/\//i.test(item.href || '')) {
+    if (/^https:\/\//i.test(link.href)) {
       link.target = '_blank'
       link.rel = 'noopener'
     }
@@ -502,23 +533,25 @@ function renderFaq(content, locale) {
 }
 
 const renderers = {
-  'hero': renderHero,
-  'metrics': renderMetrics,
-  'cards': renderCards,
-  'text_image': renderTextImage,
-  'routes': renderRoutes,
-  'jobs': renderJobs,
-  'gallery': renderGallery,
-  'testimonials': renderTestimonials,
-  'cta': renderCta,
-  'contact': renderContact,
-  'faq': renderFaq,
+  hero: renderHero,
+  metrics: renderMetrics,
+  cards: renderCards,
+  text_image: renderTextImage,
+  routes: renderRoutes,
+  jobs: renderJobs,
+  gallery: renderGallery,
+  testimonials: renderTestimonials,
+  cta: renderCta,
+  contact: renderContact,
+  faq: renderFaq,
 }
 
 export function renderLanding(root, sections = [], { locale = 'es' } = {}) {
   if (!root) throw new Error('No encontramos el contenedor de la página principal.')
   const fragment = document.createDocumentFragment()
-  const ordered = [...sections].filter((section) => section?.visible !== false).sort((a, b) => Number(a.position || 0) - Number(b.position || 0))
+  const ordered = [...sections]
+    .filter((section) => section?.visible !== false)
+    .sort((a, b) => Number(a.position || 0) - Number(b.position || 0))
   for (const section of ordered) {
     const renderer = renderers[section.type]
     if (!renderer) continue
