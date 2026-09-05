@@ -40,6 +40,7 @@ const normalize = (html) => html
 
 function parseJsonLd(html, path) {
   const blocks = [...html.matchAll(/<script\s+type=["']application\/ld\+json["']>([\s\S]*?)<\/script>/gi)]
+  assert.ok(blocks.length, `${path} needs JSON-LD`)
   for (const [, source] of blocks) assert.doesNotThrow(() => JSON.parse(source), `${path} contains malformed JSON-LD`)
 }
 
@@ -59,6 +60,10 @@ test('Phase 1 SEO pages have unique crawlable metadata and production canonicals
     titles.add(title)
     descriptions.add(description)
     assert.match(html, /<h1[\s>]/i)
+    assert.match(html, /<meta\s+property=["']og:title["']/i)
+    assert.match(html, /<meta\s+property=["']og:description["']/i)
+    assert.match(html, /<meta\s+property=["']og:url["']/i)
+    assert.match(html, /<meta\s+name=["']twitter:card["']/i)
     parseJsonLd(html, path)
   }
 })
@@ -80,6 +85,7 @@ test('commercial pages focus on BPO buyers and Dominican nearshore context', asy
     const html = await read(path)
     assert.match(html, /(BPO|nearshore|outsourcing|customer service)/i)
     assert.match(html, /(Dominican Republic|Dominicana)/i)
+    assert.match(html, /href=["']\/index\.html#contacto["']/i)
     assert.doesNotMatch(html, /apply for a job|job vacancy/i)
   }
 })
@@ -97,6 +103,8 @@ test('priority state pages are materially distinct and link to the national BPO 
     const html = await read(path)
     assert.match(html, new RegExp(stateByPath.get(path)))
     assert.match(html, /href=["']\/en\/bpo-united-states\/["']/)
+    assert.match(html, /FAQ/i)
+    assert.doesNotMatch(html, /our (office|team) in (Florida|New York|New Jersey|Massachusetts|Pennsylvania)/i)
     bodies.push([path, normalize(html)])
   }
   for (let i = 0; i < bodies.length; i++) {
@@ -107,8 +115,9 @@ test('priority state pages are materially distinct and link to the national BPO 
 })
 
 test('utility and authenticated pages are not intended for indexing', async () => {
-  for (const path of ['application.html', 'admin.html', 'recruiter.html', 'staff-login.html', 'reset-password.html']) {
-    assert.match(await read(path), /<meta\s+name=["']robots["']\s+content=["']noindex,follow["']/i)
+  assert.match(await read('application.html'), /<meta\s+name=["']robots["']\s+content=["']noindex,follow["']/i)
+  for (const path of ['admin.html', 'recruiter.html', 'staff-login.html', 'reset-password.html']) {
+    assert.match(await read(path), /<meta\s+name=["']robots["']\s+content=["']noindex,(?:follow|nofollow)["']/i)
   }
 })
 
@@ -124,4 +133,11 @@ test('language homes expose reciprocal hreflang alternates', async () => {
   assert.match(es, /hreflang=["']en-US["'][^>]+href=["']https:\/\/eworker360dominicana\.com\/en\/["']/i)
   assert.match(en, /hreflang=["']es-DO["'][^>]+href=["']https:\/\/eworker360dominicana\.com\/es\/["']/i)
   assert.match(en, /hreflang=["']en-US["'][^>]+href=["']https:\/\/eworker360dominicana\.com\/en\/["']/i)
+})
+
+test('robots file keeps public crawling enabled and advertises the production sitemap', async () => {
+  const robots = await read('robots.txt')
+  assert.match(robots, /User-agent:\s*\*/i)
+  assert.match(robots, /Allow:\s*\//i)
+  assert.match(robots, /Sitemap:\s*https:\/\/eworker360dominicana\.com\/sitemap\.xml/i)
 })
