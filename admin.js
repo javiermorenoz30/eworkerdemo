@@ -13,6 +13,7 @@ import {
   updateSiteSettings,
 } from './data-api.js'
 import { applicationMetrics, csvForApplications } from './domain.js'
+import { initLandingEditor } from './landing-editor.js'
 
 const byId = (id) => document.getElementById(id)
 const applicationStatuses = ['Nueva', 'En revisión', 'Entrevista', 'Contratada', 'Descartada']
@@ -24,11 +25,11 @@ const staffRoles = [
   ['recruiter', 'Reclutador'],
 ]
 const titles = {
-  overview: ['Centro de control.', 'Datos compartidos y protegidos por Supabase.'],
+  overview: ['Centro de control.', 'Resumen de solicitudes, mensajes y actividad.'],
   applications: ['Bandeja de solicitudes.', 'Revisa cada candidatura y actualiza el proceso.'],
   messages: ['Mensajes de talento.', 'Consultas recibidas desde el formulario público.'],
   leads: ['Propuestas de empresas.', 'Oportunidades comerciales recibidas desde la web.'],
-  content: ['Configuración de contenido.', 'Valores compartidos de administración.'],
+  content: ['Editar página principal.', 'Prepara el borrador, revísalo y publica cuando esté listo.'],
   settings: ['Ajustes de notificación.', 'Configura el destino de los avisos del equipo.'],
   team: ['Equipo y accesos.', 'Administra usuarios autorizados e invitaciones.'],
 }
@@ -43,7 +44,9 @@ const state = {
 let selectedId = null
 let adminProfile = null
 
-const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character])
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+})[character])
 const initials = (name) => String(name || 'SN').split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
 const statusClass = (status) => `status-${String(status).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}`
 const statusBadge = (status) => `<span class="status-badge ${statusClass(status)}">${escapeHtml(status)}</span>`
@@ -57,11 +60,16 @@ function dateLabel(date) {
   const hours = Math.round((Date.now() - value.getTime()) / 3600000)
   if (hours < 1) return 'Ahora mismo'
   if (hours < 24) return `Hace ${hours} h`
-  return value.toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: value.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined })
+  return value.toLocaleDateString('es-DO', {
+    day: 'numeric',
+    month: 'short',
+    year: value.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
+  })
 }
 
 function showError(message) {
   const box = byId('dashboard-error')
+  if (!box) return
   box.textContent = message
   box.classList.add('show')
   box.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -69,6 +77,7 @@ function showError(message) {
 
 function clearError() {
   const box = byId('dashboard-error')
+  if (!box) return
   box.textContent = ''
   box.classList.remove('show')
 }
@@ -113,12 +122,55 @@ function renderRecent() {
     recent.innerHTML = '<p class="empty">Aún no hay solicitudes registradas.</p>'
     return
   }
-  recent.innerHTML = state.applications.slice(0, 5).map((app) => `<div class="recent-item"><span class="avatar">${escapeHtml(initials(app.full_name))}</span><div><b>${escapeHtml(app.full_name || 'Sin nombre')}</b><small>${escapeHtml(app.role_applied || 'Solicitud general')} · ${escapeHtml(dateLabel(app.created_at))}</small></div>${statusBadge(app.status)}</div>`).join('')
+  recent.innerHTML = state.applications.slice(0, 5).map((app) => `
+    <div class="recent-item">
+      <span class="avatar">${escapeHtml(initials(app.full_name))}</span>
+      <div><b>${escapeHtml(app.full_name || 'Sin nombre')}</b><small>${escapeHtml(app.role_applied || 'Solicitud general')} · ${escapeHtml(dateLabel(app.created_at))}</small></div>
+      ${statusBadge(app.status)}
+    </div>
+  `).join('')
 }
 
 function answerLabel(key) {
   const labels = {
-    position: 'Posición', employmentMode: 'Modalidad de empleo', englishLevel: 'Nivel de inglés', referralSource: 'Cómo se enteró', fullName: 'Nombre completo', address: 'Dirección', birthDate: 'Fecha de nacimiento', cedula: 'Número de cédula', whatsapp: 'WhatsApp', email: 'Correo electrónico', transportation: 'Transporte al trabajo', traveledAbroad: 'Ha viajado fuera del país', travelDestinations: 'Destinos de viaje', hasVisa: 'Visa EE. UU. o Europa', familyAtCompany: 'Familiar en eWorker', financialAssets: 'Bancos / financieras', financialObligations: 'Obligaciones financieras', justiceIssues: 'Problemas con la justicia', academicSummary: 'Resumen académico', currentlyStudying: 'Estudia actualmente', educationLevel: 'Nivel académico', courses: 'Cursos completados', technologyLevel: 'Manejo de tecnología', workSummary: 'Resumen laboral', job1Company: 'Empleo 1 · Compañía', job1LastDate: 'Empleo 1 · Última fecha', job1ExitReason: 'Empleo 1 · Razón de salida', job2Company: 'Empleo 2 · Compañía', job2LastDate: 'Empleo 2 · Última fecha', job2ExitReason: 'Empleo 2 · Razón de salida', job3Company: 'Empleo 3 · Compañía', job3LastDate: 'Empleo 3 · Última fecha', job3ExitReason: 'Empleo 3 · Razón de salida', currentlyEmployed: 'Labora actualmente', lastSalary: 'Último salario', yearsSales: 'Años en ventas', yearsCustomerService: 'Años en servicio al cliente', consent: 'Consentimiento',
+    position: 'Posición',
+    employmentMode: 'Modalidad de empleo',
+    englishLevel: 'Nivel de inglés',
+    referralSource: 'Cómo se enteró',
+    fullName: 'Nombre completo',
+    address: 'Dirección',
+    birthDate: 'Fecha de nacimiento',
+    cedula: 'Número de cédula',
+    whatsapp: 'WhatsApp',
+    email: 'Correo electrónico',
+    transportation: 'Transporte al trabajo',
+    traveledAbroad: 'Ha viajado fuera del país',
+    travelDestinations: 'Destinos de viaje',
+    hasVisa: 'Visa EE. UU. o Europa',
+    familyAtCompany: 'Familiar en eWorker',
+    financialAssets: 'Bancos / financieras',
+    financialObligations: 'Obligaciones financieras',
+    justiceIssues: 'Problemas con la justicia',
+    academicSummary: 'Resumen académico',
+    currentlyStudying: 'Estudia actualmente',
+    educationLevel: 'Nivel académico',
+    courses: 'Cursos completados',
+    technologyLevel: 'Manejo de tecnología',
+    workSummary: 'Resumen laboral',
+    job1Company: 'Empleo 1 · Compañía',
+    job1LastDate: 'Empleo 1 · Última fecha',
+    job1ExitReason: 'Empleo 1 · Razón de salida',
+    job2Company: 'Empleo 2 · Compañía',
+    job2LastDate: 'Empleo 2 · Última fecha',
+    job2ExitReason: 'Empleo 2 · Razón de salida',
+    job3Company: 'Empleo 3 · Compañía',
+    job3LastDate: 'Empleo 3 · Última fecha',
+    job3ExitReason: 'Empleo 3 · Razón de salida',
+    currentlyEmployed: 'Labora actualmente',
+    lastSalary: 'Último salario',
+    yearsSales: 'Años en ventas',
+    yearsCustomerService: 'Años en servicio al cliente',
+    consent: 'Consentimiento',
   }
   return labels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase())
 }
@@ -135,8 +187,23 @@ function renderCandidateDetail(application) {
     panel.innerHTML = '<div class="detail-empty"><b>Selecciona una solicitud</b><span>El formulario completo aparecerá aquí.</span></div>'
     return
   }
-  const answers = Object.entries(application.answers || {}).map(([key, value]) => `<div class="answer-row"><b>${escapeHtml(answerLabel(key))}</b><span>${escapeHtml(answerValue(value))}</span></div>`).join('')
-  panel.innerHTML = `<div class="detail-top"><span class="detail-avatar">${escapeHtml(initials(application.full_name))}</span>${statusBadge(application.status)}</div><h2>${escapeHtml(application.full_name || 'Sin nombre')}</h2><p class="eyebrow">${escapeHtml(application.role_applied || 'SOLICITUD GENERAL')}</p><div class="detail-contact"><a href="mailto:${escapeHtml(application.email)}">${escapeHtml(application.email || 'Sin correo')}</a><br><a href="tel:${escapeHtml(application.phone)}">${escapeHtml(application.phone || 'Sin teléfono')}</a><br>Recibida ${escapeHtml(dateLabel(application.created_at))}</div><div class="answer-grid">${answers || '<div class="answer-row"><span>Sin respuestas adicionales.</span></div>'}</div><div class="detail-field"><label for="candidate-status">ETAPA DEL PROCESO</label><select id="candidate-status" data-edit-status="${escapeHtml(application.id)}">${selectOptions(applicationStatuses, application.status)}</select></div><div class="detail-field"><label for="candidate-note">NOTA INTERNA</label><textarea id="candidate-note" data-edit-note="${escapeHtml(application.id)}" placeholder="Añade una nota para el equipo">${escapeHtml(application.internal_note || '')}</textarea></div><button class="primary detail-save" data-save-note="${escapeHtml(application.id)}">Guardar seguimiento</button>`
+  const answers = Object.entries(application.answers || {})
+    .map(([key, value]) => `<div class="answer-row"><b>${escapeHtml(answerLabel(key))}</b><span>${escapeHtml(answerValue(value))}</span></div>`)
+    .join('')
+  panel.innerHTML = `
+    <div class="detail-top"><span class="detail-avatar">${escapeHtml(initials(application.full_name))}</span>${statusBadge(application.status)}</div>
+    <h2>${escapeHtml(application.full_name || 'Sin nombre')}</h2>
+    <p class="eyebrow">${escapeHtml(application.role_applied || 'SOLICITUD GENERAL')}</p>
+    <div class="detail-contact">
+      <a href="mailto:${escapeHtml(application.email)}">${escapeHtml(application.email || 'Sin correo')}</a><br>
+      <a href="tel:${escapeHtml(application.phone)}">${escapeHtml(application.phone || 'Sin teléfono')}</a><br>
+      Recibida ${escapeHtml(dateLabel(application.created_at))}
+    </div>
+    <div class="answer-grid">${answers || '<div class="answer-row"><span>Sin respuestas adicionales.</span></div>'}</div>
+    <div class="detail-field"><label for="candidate-status">ETAPA DEL PROCESO</label><select id="candidate-status" data-edit-status="${escapeHtml(application.id)}">${selectOptions(applicationStatuses, application.status)}</select></div>
+    <div class="detail-field"><label for="candidate-note">NOTA INTERNA</label><textarea id="candidate-note" data-edit-note="${escapeHtml(application.id)}" placeholder="Añade una nota para el equipo">${escapeHtml(application.internal_note || '')}</textarea></div>
+    <button class="primary detail-save" data-save-note="${escapeHtml(application.id)}">Guardar seguimiento</button>
+  `
 }
 
 function renderApplications() {
@@ -149,29 +216,70 @@ function renderApplications() {
     return
   }
   if (!applications.some((app) => app.id === selectedId)) selectedId = applications[0].id
-  byId('applications-list').innerHTML = applications.map((app) => `<button class="application-row ${app.id === selectedId ? 'active' : ''}" data-candidate="${escapeHtml(app.id)}"><span class="avatar">${escapeHtml(initials(app.full_name))}</span><span class="application-info"><b>${escapeHtml(app.full_name || 'Sin nombre')}</b><small>${escapeHtml(app.role_applied || 'Solicitud general')} · ${escapeHtml(dateLabel(app.created_at))}</small></span>${statusBadge(app.status)}</button>`).join('')
+  byId('applications-list').innerHTML = applications.map((app) => `
+    <button class="application-row ${app.id === selectedId ? 'active' : ''}" data-candidate="${escapeHtml(app.id)}">
+      <span class="avatar">${escapeHtml(initials(app.full_name))}</span>
+      <span class="application-info"><b>${escapeHtml(app.full_name || 'Sin nombre')}</b><small>${escapeHtml(app.role_applied || 'Solicitud general')} · ${escapeHtml(dateLabel(app.created_at))}</small></span>
+      ${statusBadge(app.status)}
+    </button>
+  `).join('')
   renderCandidateDetail(applications.find((app) => app.id === selectedId))
 }
 
 function renderMessages() {
   byId('messages-count').textContent = state.messages.length
-  byId('messages-list').innerHTML = state.messages.length ? state.messages.map((message) => `<article class="data-record"><div class="data-record-head"><div><h3>${escapeHtml(message.name)}</h3><small>${escapeHtml(message.email)} · ${escapeHtml(dateLabel(message.created_at))}</small></div><select data-message-status="${escapeHtml(message.id)}" aria-label="Estado del mensaje">${selectOptions(messageStatuses, message.status)}</select></div><p><b>${escapeHtml(message.subject || 'Sin asunto')}</b></p><p>${escapeHtml(message.message)}</p></article>`).join('') : '<p class="empty">No hay mensajes recibidos.</p>'
+  byId('messages-list').innerHTML = state.messages.length
+    ? state.messages.map((message) => `
+      <article class="data-record">
+        <div class="data-record-head">
+          <div><h3>${escapeHtml(message.name)}</h3><small>${escapeHtml(message.email)} · ${escapeHtml(dateLabel(message.created_at))}</small></div>
+          <select data-message-status="${escapeHtml(message.id)}" aria-label="Estado del mensaje">${selectOptions(messageStatuses, message.status)}</select>
+        </div>
+        <p><b>${escapeHtml(message.subject || 'Sin asunto')}</b></p>
+        <p>${escapeHtml(message.message)}</p>
+      </article>
+    `).join('')
+    : '<p class="empty">No hay mensajes recibidos.</p>'
 }
 
 function renderLeads() {
   byId('leads-count').textContent = state.leads.length
-  byId('leads-list').innerHTML = state.leads.length ? state.leads.map((lead) => `<article class="data-record"><div class="data-record-head"><div><h3>${escapeHtml(lead.contact_name)}</h3><small>${escapeHtml(lead.email)} · ${escapeHtml(dateLabel(lead.created_at))}</small></div><select data-lead-status="${escapeHtml(lead.id)}" aria-label="Estado de la propuesta">${selectOptions(leadStatuses, lead.status)}</select></div><p><b>${escapeHtml(lead.subject || 'Sin asunto')}</b></p><p>${escapeHtml(lead.message)}</p></article>`).join('') : '<p class="empty">No hay propuestas recibidas.</p>'
+  byId('leads-list').innerHTML = state.leads.length
+    ? state.leads.map((lead) => `
+      <article class="data-record">
+        <div class="data-record-head">
+          <div><h3>${escapeHtml(lead.contact_name)}</h3><small>${escapeHtml(lead.email)} · ${escapeHtml(dateLabel(lead.created_at))}</small></div>
+          <select data-lead-status="${escapeHtml(lead.id)}" aria-label="Estado de la propuesta">${selectOptions(leadStatuses, lead.status)}</select>
+        </div>
+        <p><b>${escapeHtml(lead.subject || 'Sin asunto')}</b></p>
+        <p>${escapeHtml(lead.message)}</p>
+      </article>
+    `).join('')
+    : '<p class="empty">No hay propuestas recibidas.</p>'
 }
 
 function renderTeam() {
   const activeCount = state.profiles.filter((profile) => profile.active).length
   byId('team-count').textContent = state.profiles.length
   byId('staff-online-count').textContent = `${activeCount} activos`
-  byId('staff-list').innerHTML = state.profiles.length ? state.profiles.map((profile) => {
-    const ownProfile = profile.id === adminProfile?.id
-    const roleControl = `<select class="staff-action" data-staff-role="${escapeHtml(profile.id)}" aria-label="Rol de ${escapeHtml(profile.full_name || profile.email)}" ${ownProfile ? 'disabled title="No puedes cambiar tu propio rol desde esta sesión"' : ''}>${staffRoleOptions(profile.role)}</select>`
-    return `<div class="staff-row"><span class="avatar">${escapeHtml(initials(profile.full_name || profile.email))}</span><div class="staff-info"><b>${escapeHtml(profile.full_name || 'Sin nombre')}</b><small>${escapeHtml(profile.email)} · ${escapeHtml(staffRoleLabel(profile.role))}</small>${roleControl}<span class="presence ${profile.active ? 'online' : ''}">${profile.active ? 'Acceso activo' : 'Acceso pausado'}</span></div><button class="staff-action" data-staff-toggle="${escapeHtml(profile.id)}" ${ownProfile ? 'disabled title="No puedes pausar tu propia cuenta desde esta sesión"' : ''}>${profile.active ? 'Pausar' : 'Activar'}</button></div>`
-  }).join('') : '<p class="empty">No hay perfiles autorizados.</p>'
+  byId('staff-list').innerHTML = state.profiles.length
+    ? state.profiles.map((profile) => {
+      const ownProfile = profile.id === adminProfile?.id
+      const roleControl = `<select class="staff-action" data-staff-role="${escapeHtml(profile.id)}" aria-label="Rol de ${escapeHtml(profile.full_name || profile.email)}" ${ownProfile ? 'disabled title="No puedes cambiar tu propio rol desde esta sesión"' : ''}>${staffRoleOptions(profile.role)}</select>`
+      return `
+        <div class="staff-row">
+          <span class="avatar">${escapeHtml(initials(profile.full_name || profile.email))}</span>
+          <div class="staff-info">
+            <b>${escapeHtml(profile.full_name || 'Sin nombre')}</b>
+            <small>${escapeHtml(profile.email)} · ${escapeHtml(staffRoleLabel(profile.role))}</small>
+            ${roleControl}
+            <span class="presence ${profile.active ? 'online' : ''}">${profile.active ? 'Acceso activo' : 'Acceso pausado'}</span>
+          </div>
+          <button class="staff-action" data-staff-toggle="${escapeHtml(profile.id)}" ${ownProfile ? 'disabled title="No puedes pausar tu propia cuenta desde esta sesión"' : ''}>${profile.active ? 'Pausar' : 'Activar'}</button>
+        </div>
+      `
+    }).join('')
+    : '<p class="empty">No hay perfiles autorizados.</p>'
 }
 
 function renderOverview() {
@@ -182,8 +290,12 @@ function renderOverview() {
   byId('hired').textContent = metrics.hired
   byId('nav-count').textContent = metrics.total
   byId('total-sub').textContent = metrics.total ? `${metrics.total} registros compartidos` : 'Sin solicitudes todavía'
-  byId('focus-title').textContent = metrics.newCount ? `${metrics.newCount} solicitud${metrics.newCount === 1 ? '' : 'es'} nueva${metrics.newCount === 1 ? '' : 's'} por revisar.` : metrics.total ? 'La bandeja está al día.' : 'La operación está lista.'
-  byId('focus-copy').textContent = metrics.newCount ? 'Prioriza los perfiles nuevos para mantener una respuesta rápida.' : metrics.total ? 'Revisa el pipeline y programa el siguiente seguimiento.' : 'Las nuevas solicitudes aparecerán aquí después de enviarse desde la web.'
+  byId('focus-title').textContent = metrics.newCount
+    ? `${metrics.newCount} solicitud${metrics.newCount === 1 ? '' : 'es'} nueva${metrics.newCount === 1 ? '' : 's'} por revisar.`
+    : metrics.total ? 'La bandeja está al día.' : 'La operación está lista.'
+  byId('focus-copy').textContent = metrics.newCount
+    ? 'Prioriza los perfiles nuevos para mantener una respuesta rápida.'
+    : metrics.total ? 'Revisa el pipeline y programa el siguiente seguimiento.' : 'Las nuevas solicitudes aparecerán aquí después de enviarse desde la web.'
   renderPipeline()
   renderRecent()
 }
@@ -192,15 +304,19 @@ function populateSettings() {
   if (!state.settings) return
   const content = byId('content-form')
   const settings = byId('settings-form')
-  content.elements.brandName.value = state.settings.brand_name || ''
-  content.elements.contactEmail.value = state.settings.contact_email || ''
-  content.elements.contactPhone.value = state.settings.contact_phone || ''
-  content.elements.whatsapp.value = state.settings.whatsapp || ''
-  content.elements.heroTitle.value = state.settings.hero_title || ''
-  content.elements.heroLead.value = state.settings.hero_lead || ''
-  settings.elements.notificationEmail.value = state.settings.notification_email || ''
-  settings.elements.emailSubject.value = state.settings.email_subject || ''
-  settings.elements.autoReply.checked = Boolean(state.settings.auto_reply)
+  if (content) {
+    content.elements.brandName.value = state.settings.brand_name || ''
+    content.elements.contactEmail.value = state.settings.contact_email || ''
+    content.elements.contactPhone.value = state.settings.contact_phone || ''
+    content.elements.whatsapp.value = state.settings.whatsapp || ''
+    content.elements.heroTitle.value = state.settings.hero_title || ''
+    content.elements.heroLead.value = state.settings.hero_lead || ''
+  }
+  if (settings) {
+    settings.elements.notificationEmail.value = state.settings.notification_email || ''
+    settings.elements.emailSubject.value = state.settings.email_subject || ''
+    settings.elements.autoReply.checked = Boolean(state.settings.auto_reply)
+  }
 }
 
 function renderAll() {
@@ -219,7 +335,11 @@ async function loadDashboard() {
   byId('staff-list').innerHTML = '<p class="empty">Cargando equipo…</p>'
   try {
     const [applications, messages, leads, settings, profiles] = await Promise.all([
-      listApplications(), listContactMessages(), listBusinessLeads(), getSiteSettings(), listProfiles(),
+      listApplications(),
+      listContactMessages(),
+      listBusinessLeads(),
+      getSiteSettings(),
+      listProfiles(),
     ])
     state.applications = applications
     state.messages = messages
@@ -229,7 +349,7 @@ async function loadDashboard() {
     renderAll()
     populateSettings()
   } catch (error) {
-    showError(`No pudimos cargar el panel desde Supabase. ${error?.message || 'Inténtalo nuevamente.'}`)
+    showError(`No pudimos cargar el panel. ${error?.message || 'Inténtalo nuevamente.'}`)
   }
 }
 
@@ -246,6 +366,7 @@ function bindApplicationActions() {
     selectedId = target.dataset.candidate
     renderApplications()
   })
+
   byId('candidate-detail').addEventListener('change', async (event) => {
     const target = event.target
     if (!target.matches('[data-edit-status]')) return
@@ -265,6 +386,7 @@ function bindApplicationActions() {
       target.disabled = false
     }
   })
+
   byId('candidate-detail').addEventListener('click', async (event) => {
     const target = event.target.closest('[data-save-note]')
     if (!target) return
@@ -301,8 +423,11 @@ function bindOperationalLists() {
     } catch (error) {
       target.value = previous
       showError(`No se pudo actualizar el mensaje. ${error?.message || ''}`)
-    } finally { target.disabled = false }
+    } finally {
+      target.disabled = false
+    }
   })
+
   byId('leads-list').addEventListener('change', async (event) => {
     const target = event.target
     if (!target.matches('[data-lead-status]')) return
@@ -317,12 +442,15 @@ function bindOperationalLists() {
     } catch (error) {
       target.value = previous
       showError(`No se pudo actualizar la propuesta. ${error?.message || ''}`)
-    } finally { target.disabled = false }
+    } finally {
+      target.disabled = false
+    }
   })
 }
 
 function bindSettings() {
-  byId('content-form').addEventListener('submit', async (event) => {
+  const contentForm = byId('content-form')
+  contentForm?.addEventListener('submit', async (event) => {
     event.preventDefault()
     const form = event.currentTarget
     const button = form.querySelector('button[type="submit"], button:not([type])')
@@ -330,17 +458,27 @@ function bindSettings() {
     button.disabled = true
     note.textContent = 'Guardando…'
     const values = Object.fromEntries(new FormData(form))
-    const patch = { brand_name: values.brandName, contact_email: values.contactEmail, contact_phone: values.contactPhone, whatsapp: values.whatsapp, hero_title: values.heroTitle, hero_lead: values.heroLead }
+    const patch = {
+      brand_name: values.brandName,
+      contact_email: values.contactEmail,
+      contact_phone: values.contactPhone,
+      whatsapp: values.whatsapp,
+      hero_title: values.heroTitle,
+      hero_lead: values.heroLead,
+    }
     try {
       await updateSiteSettings(patch)
       Object.assign(state.settings, patch)
-      note.textContent = 'Configuración guardada en Supabase.'
+      note.textContent = 'Configuración guardada.'
       clearError()
     } catch (error) {
       note.textContent = 'No se pudieron guardar los cambios.'
       showError(error?.message || 'Error guardando configuración.')
-    } finally { button.disabled = false }
+    } finally {
+      button.disabled = false
+    }
   })
+
   byId('settings-form').addEventListener('submit', async (event) => {
     event.preventDefault()
     const form = event.currentTarget
@@ -349,16 +487,22 @@ function bindSettings() {
     button.disabled = true
     note.textContent = 'Guardando…'
     const values = Object.fromEntries(new FormData(form))
-    const patch = { notification_email: values.notificationEmail, email_subject: values.emailSubject, auto_reply: form.elements.autoReply.checked }
+    const patch = {
+      notification_email: values.notificationEmail,
+      email_subject: values.emailSubject,
+      auto_reply: form.elements.autoReply.checked,
+    }
     try {
       await updateSiteSettings(patch)
       Object.assign(state.settings, patch)
-      note.textContent = 'Ajustes guardados en Supabase.'
+      note.textContent = 'Ajustes guardados.'
       clearError()
     } catch (error) {
       note.textContent = 'No se pudieron guardar los ajustes.'
       showError(error?.message || 'Error guardando ajustes.')
-    } finally { button.disabled = false }
+    } finally {
+      button.disabled = false
+    }
   })
 }
 
@@ -373,16 +517,19 @@ function bindTeam() {
     note.textContent = 'Enviando invitación…'
     try {
       await inviteRecruiter(String(values.name || '').trim(), String(values.email || '').trim())
-      note.textContent = 'Invitación enviada. El usuario aparecerá cuando la función termine de crear su perfil.'
+      note.textContent = 'Invitación enviada. El usuario aparecerá cuando se cree su perfil.'
       form.reset()
       state.profiles = await listProfiles()
       renderTeam()
       clearError()
     } catch (error) {
       note.textContent = 'No se pudo enviar la invitación.'
-      showError(`Invitación pendiente: ${error?.message || 'la función manage-staff aún no está disponible.'}`)
-    } finally { button.disabled = false }
+      showError(`No se pudo completar la invitación. ${error?.message || ''}`)
+    } finally {
+      button.disabled = false
+    }
   })
+
   byId('staff-list').addEventListener('change', async (event) => {
     const target = event.target
     if (!target.matches('[data-staff-role]') || target.disabled) return
@@ -401,6 +548,7 @@ function bindTeam() {
       showError(`No se pudo cambiar el rol. ${error?.message || ''}`)
     }
   })
+
   byId('staff-list').addEventListener('click', async (event) => {
     const target = event.target.closest('[data-staff-toggle]')
     if (!target || target.disabled) return
@@ -428,10 +576,15 @@ function bindExportAndLogout() {
     link.click()
     URL.revokeObjectURL(url)
   })
+
   byId('logout').addEventListener('click', async () => {
     const button = byId('logout')
     button.disabled = true
-    try { await signOut() } finally { window.location.replace('staff-login.html') }
+    try {
+      await signOut()
+    } finally {
+      window.location.replace('staff-login.html')
+    }
   })
 }
 
@@ -440,6 +593,8 @@ async function main() {
   if (!adminProfile) return
   byId('admin-name').textContent = adminProfile.full_name || 'Administrador'
   byId('admin-email').textContent = adminProfile.email || ''
+
+  await initLandingEditor()
   bindNavigation()
   bindApplicationActions()
   bindOperationalLists()
