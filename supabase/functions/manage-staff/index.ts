@@ -2,7 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders, isAllowedOrigin, jsonResponse } from '../_shared/cors.ts'
 import { getSupabaseSecretKey, getSupabaseUrl } from '../_shared/supabase-env.ts'
 
-const inviteRedirect = 'https://javiermorenoz30.github.io/eworkerdemo/reset-password.html'
+const inviteRedirect = 'https://eworkerdemo.zencontroller.workers.dev/reset-password.html'
 const managerRoles = ['admin', 'boss']
 const allowedRoles = ['admin', 'boss', 'recruiter']
 
