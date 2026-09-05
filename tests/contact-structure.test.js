@@ -4,9 +4,12 @@ import { readFile } from 'node:fs/promises'
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('contact page loads app.js as an ES module', async () => {
+test('contact page loads the current classic entry script that uses dynamic modules', async () => {
   const html = await read('index.html')
-  assert.match(html, /<script type="module" src="app\.js\?v=supabase-1"><\/script>/)
+  const app = await read('app.js')
+  assert.match(html, /<script src="app\.js\?v=application-inbox-1" defer><\/script>/)
+  assert.match(app, /await import\(['"]\.\/landing-bootstrap\.js['"]\)/)
+  assert.match(app, /await import\(['"]\.\/data-api\.js['"]\)/)
 })
 
 test('data API exposes separate contact and business insert operations', async () => {
@@ -17,11 +20,13 @@ test('data API exposes separate contact and business insert operations', async (
   assert.match(api, /from\(['"]business_leads['"]\)/)
 })
 
-test('public contact handler persists based on audience before resetting', async () => {
+test('public contact handler persists based on audience before resetting and notifies afterward', async () => {
   const app = await read('app.js')
   assert.match(app, /submitBusinessLead/)
+  assert.match(app, /notificationType = ['"]business_lead['"]/)
   assert.match(app, /submitContactMessage/)
-  assert.match(app, /notifySubmission\(['"]business_lead['"]/)
-  assert.match(app, /notifySubmission\(['"]contact_message['"]/)
+  assert.match(app, /notificationType = ['"]contact_message['"]/)
+  assert.match(app, /await notifySubmission\(notificationType, id\)/)
+  assert.match(app, /form\.reset\(\)/)
   assert.doesNotMatch(app, /mensaje está listo para ser enviado/)
 })

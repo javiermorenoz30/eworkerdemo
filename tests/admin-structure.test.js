@@ -25,6 +25,14 @@ test('admin dashboard is guarded and loads all shared Supabase data', async () =
   assert.doesNotMatch(js, /EWorkerDemoStore|localStorage|seedDemoApplications/)
 })
 
+test('team UI can label and assign Admin, Boss, or Recruiter roles', async () => {
+  const js = await read('admin.js')
+  assert.match(js, /Administrador/)
+  assert.match(js, /Boss/)
+  assert.match(js, /Reclutador/)
+  assert.match(js, /data-staff-role/)
+})
+
 test('data API has authenticated admin read and operational update functions', async () => {
   const api = await read('data-api.js')
   for (const name of ['listApplications','updateApplication','listContactMessages','updateContactMessageStatus','listBusinessLeads','updateBusinessLeadStatus','getSiteSettings','updateSiteSettings','listProfiles','updateProfile','inviteRecruiter']) {

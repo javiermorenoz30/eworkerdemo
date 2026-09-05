@@ -17,6 +17,7 @@ test('auth module uses Supabase password auth and profile authorization', async 
   assert.match(auth, /from\(['"]profiles['"]\)/)
   assert.match(auth, /resetPasswordForEmail/)
   assert.match(auth, /signOut/)
+  assert.match(auth, /isManagerProfile/)
 })
 
 test('staff login no longer references local access-code auth', async () => {

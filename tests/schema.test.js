@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
 const migrationPath = new URL('../supabase/migrations/20260904_initial_production_schema.sql', import.meta.url)
+const bossMigrationPath = new URL('../supabase/migrations/2026090501_boss_role.sql', import.meta.url)
 
 test('production migration creates required tables and enables RLS', async () => {
   const sql = await readFile(migrationPath, 'utf8')
@@ -22,6 +23,13 @@ test('production migration defines role helpers and narrow public policies', asy
   assert.match(sql, /internal_note = ''/)
   assert.match(sql, /create policy profiles_admin_update/i)
   assert.match(sql, /create policy settings_admin_update/i)
+})
+
+test('Boss follow-up migration gives Boss manager and operational Admin parity', async () => {
+  const sql = await readFile(bossMigrationPath, 'utf8')
+  assert.match(sql, /role in \('admin',\s*'boss',\s*'recruiter'\)/i)
+  assert.match(sql, /create or replace function public\.is_admin\(\)[\s\S]*role in \('admin',\s*'boss'\)/i)
+  assert.match(sql, /create or replace function public\.is_recruiter_or_admin\(\)[\s\S]*role in \('admin',\s*'boss',\s*'recruiter'\)/i)
 })
 
 test('production migration does not grant anonymous select on sensitive tables', async () => {
