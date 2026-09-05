@@ -4,7 +4,7 @@
 
 **Goal:** Let Admin/Boss choose invitation roles, permanently delete contact messages/business proposals with confirmation, and let authenticated Admin/Boss/Recruiter opt in to realtime in-app and browser notifications for new operational records.
 
-**Architecture:** Keep privileged mutations server-side. Extend `manage-staff` for role-aware invites, add a narrowly scoped `manage-records` Edge Function for manager-only deletion, and add a small shared `staff-notifications.js` module that both admin and recruiter portals initialize only after their existing auth guards succeed. Supabase Realtime listens only for INSERT events on the three operational tables and the browser Notification API is requested only from an explicit user gesture.
+**Architecture:** Keep privileged mutations server-side. Extend `manage-staff` for role-aware invites, add a narrowly scoped `manage-records` Edge Function for manager-only deletion, and add a small shared `staff-notifications.js` module that both admin and recruiter portals initialize only after their existing auth guards succeed. The realtime channel is active only after the staff member has opted in (or previously opted in on that browser); Supabase Realtime listens only for INSERT events on the three operational tables, and the browser Notification API is requested only from an explicit user gesture.
 
 **Tech Stack:** Vanilla HTML/CSS/ES modules, Supabase JS v2, Supabase Edge Functions (Deno), Postgres/RLS/Realtime, Node built-in test runner, Cloudflare asset deployment checks.
 
@@ -21,6 +21,7 @@
 - Permanent deletion requires explicit confirmation and occurs only after server authorization.
 - Browser/system notification content must be generic and contain no applicant/contact PII.
 - Notification permission is requested only after the user explicitly clicks the activation control.
+- In-app realtime alerts are opt-in; if the browser preference is disabled, no realtime alert channel remains active.
 - Realtime/system alerts are session-bound; no service worker or closed-browser push is added.
 - Do not merge or deploy without explicit user approval.
 
@@ -94,7 +95,7 @@ if (!allowedRoles.includes(role as typeof allowedRoles[number])) {
   return jsonResponse(req, { error: 'Invalid staff role' }, 400)
 }
 ```
-Persist `role` in `profiles.upsert` and include it in auth user metadata if useful for auditing, while authorization continues to come from `profiles`.
+Persist `role` in `profiles.upsert`; authorization continues to come from `profiles`.
 
 - [ ] **Step 4: Run focused tests and confirm GREEN**
 
@@ -128,7 +129,7 @@ git commit -m "feat: choose staff role when inviting"
 
 - [ ] **Step 1: Write failing authorization/deletion tests**
 
-Test for: bearer-token validation, caller profile lookup, `admin|boss` allowlist, UUID validation, resource allowlist mapping only to `contact_messages` and `business_leads`, exact `.delete().eq('id', id)` targeting, and no `applications` delete path.
+Test for bearer-token validation, caller profile lookup, `admin|boss` allowlist, UUID validation, resource allowlist mapping only to `contact_messages` and `business_leads`, exact `.delete().eq('id', id)` targeting, and no `applications` delete path.
 
 ```js
 assert.match(fn, /managerRoles\s*=\s*\['admin',\s*'boss'\]/)
@@ -137,8 +138,6 @@ assert.match(fn, /business_lead:\s*['"]business_leads['"]/)
 assert.doesNotMatch(fn, /application:\s*['"]applications['"]/)
 assert.match(fn, /\.delete\(\)[\s\S]*\.eq\(['"]id['"],\s*id\)/)
 ```
-
-Migration test must verify authenticated DELETE privilege/policies are not broadly granted to recruiters; deletion remains through the server-side function.
 
 - [ ] **Step 2: Run tests and confirm RED**
 
@@ -166,7 +165,7 @@ const { data, error } = await adminClient
 ```
 Return 404 when no row is deleted, 200 `{ ok:true, id }` on success, and safe 400/401/403/500 responses otherwise.
 
-The migration must document/ensure manager helper semantics and Realtime prerequisites, but must not grant browser DELETE access to authenticated users. If publication membership is needed, add only the three operational tables idempotently.
+The migration must not grant browser DELETE access to authenticated users; deletion remains through the server-side function.
 
 - [ ] **Step 4: Add the browser wrapper**
 
@@ -211,7 +210,7 @@ git commit -m "feat: add manager-only record deletion"
 
 - [ ] **Step 1: Write failing UI behavior tests**
 
-Assert each message/lead renderer exposes `Eliminar`, handlers call `window.confirm`, confirmation text contains `permanente`, cancelled confirmation does not call delete, and state is filtered only after awaited delete success.
+Assert each message/lead renderer exposes `Eliminar`, handlers call `window.confirm`, confirmation text contains `permanentemente`, and local state filtering occurs only after awaited delete success.
 
 ```js
 assert.match(adminJs, /data-delete-message/)
@@ -231,7 +230,7 @@ Expected: FAIL because delete buttons and handlers do not exist.
 
 - [ ] **Step 3: Implement manager delete actions**
 
-Render a secondary danger button beside status controls. On click:
+Render a danger button beside status controls. On click:
 ```js
 if (!window.confirm('Esta acción eliminará el mensaje permanentemente. ¿Deseas continuar?')) return
 button.disabled = true
@@ -239,7 +238,6 @@ try {
   await deleteOperationalRecord('contact_message', id)
   state.messages = state.messages.filter((item) => item.id !== id)
   renderMessages()
-  renderOverview()
   clearError()
 } catch (error) {
   showError(`No se pudo eliminar el mensaje. ${error?.message || ''}`)
@@ -251,7 +249,7 @@ Mirror for business leads. Do not add delete controls to recruiter portal or app
 
 - [ ] **Step 4: Style the danger action**
 
-Add a reusable `.danger-action` class with accessible contrast, hover/focus treatment, and disabled state without changing existing record layout semantics.
+Add `.danger-action` with accessible contrast, hover/focus treatment, and disabled state without changing existing record layout semantics.
 
 - [ ] **Step 5: Run focused tests and confirm GREEN**
 
@@ -282,24 +280,19 @@ git commit -m "feat: let managers delete messages and proposals"
 - Modify: `staff.css`
 - Create: `tests/staff-notifications.test.js`
 - Modify: `tests/admin-structure.test.js`
-- Modify: `tests/recruiter-structure.test.js` if present; otherwise create it.
+- Create or modify: `tests/recruiter-structure.test.js`
 - Modify: `tests/contact-structure.test.js`
 
 **Interfaces:**
 - Consumes: existing authenticated `supabase` client, verified profile from `requireAdmin()` or `requireStaff()`.
 - Produces:
-  - `initStaffNotifications({ profile, onOpen }) -> { setEnabled, destroy }`
+  - `initStaffNotifications({ profile, onOpen, onStateChange }) -> { setEnabled(enabled, { requestSystemPermission }), destroy }`
   - `onOpen(kind)` where `kind` is `'applications'|'messages'|'leads'`.
   - local preference key `eworker360.staffNotifications.enabled`.
 
 - [ ] **Step 1: Write failing module/isolation tests**
 
-Tests must assert:
-- exactly three Realtime postgres-change INSERT subscriptions for `applications`, `contact_messages`, `business_leads`;
-- no UPDATE/DELETE subscription;
-- module is imported only by `admin.js` and `recruiter.js`, never by public `app.js`, `landing-bootstrap.js`, or application submission scripts;
-- system notification strings are generic and exclude record payload fields;
-- `Notification.requestPermission()` is only reachable from the explicit activation handler.
+Tests must assert exactly three Realtime postgres-change INSERT subscriptions for `applications`, `contact_messages`, `business_leads`; no UPDATE/DELETE subscription; module import only from admin/recruiter portals; generic system notification strings; and `Notification.requestPermission()` only in the explicit enable path.
 
 ```js
 for (const table of ['applications', 'contact_messages', 'business_leads']) {
@@ -307,6 +300,8 @@ for (const table of ['applications', 'contact_messages', 'business_leads']) {
 }
 assert.doesNotMatch(module, /payload\.new\.(name|email|phone|message|full_name)/)
 assert.doesNotMatch(publicApp, /staff-notifications/)
+assert.match(module, /setEnabled/)
+assert.match(module, /removeChannel/)
 ```
 
 - [ ] **Step 2: Run tests and confirm RED**
@@ -317,9 +312,9 @@ node --test tests/staff-notifications.test.js tests/admin-structure.test.js test
 ```
 Expected: FAIL because the shared notification module and controls do not exist.
 
-- [ ] **Step 3: Implement the shared module**
+- [ ] **Step 3: Implement the shared module with real opt-in**
 
-Define a table-to-event map:
+Define:
 ```js
 const EVENT_CONFIG = {
   applications: { kind: 'applications', title: 'Llegó una nueva solicitud' },
@@ -328,38 +323,29 @@ const EVENT_CONFIG = {
 }
 ```
 
-`initStaffNotifications` must reject/return inert state unless `profile.active` and role is one of `admin|boss|recruiter`. Create one Supabase channel with three `postgres_changes` INSERT handlers. Every event creates an in-app toast. If local preference is enabled, `Notification.permission === 'granted'`, and `document.hidden === true`, also create:
-```js
-new Notification(config.title, { body: 'Abre eWorker360 para revisar el nuevo registro.' })
-```
-Do not interpolate `payload.new` into title/body.
+`initStaffNotifications` must return inert controls unless `profile.active` and role is `admin|boss|recruiter`. It reads the local preference. If preference is `true`, it may restore the realtime channel automatically because the user previously opted in, but it must never call `Notification.requestPermission()` automatically. If preference is false, there is no active realtime channel.
 
-Activation control flow:
+`setEnabled(true, { requestSystemPermission:true })` is called only from the user's `Activar notificaciones` click. It stores the preference, creates one Supabase channel with three INSERT handlers, and may request browser permission. If permission is denied/unavailable, in-app toasts remain enabled. `setEnabled(false, ...)` stores false and removes the active channel.
+
+For background system alerts:
 ```js
-async function enableBrowserNotifications() {
-  if (!('Notification' in window)) return { enabled: true, system: false }
-  const permission = Notification.permission === 'default'
-    ? await Notification.requestPermission()
-    : Notification.permission
-  localStorage.setItem(PREFERENCE_KEY, 'true')
-  return { enabled: true, system: permission === 'granted' }
+if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+  new Notification(config.title, { body: 'Abre eWorker360 para revisar el nuevo registro.' })
 }
 ```
-Provide `destroy()` that calls `supabase.removeChannel(channel)`.
+Never interpolate `payload.new` into notification title/body. `destroy()` must remove the channel without changing the saved user preference.
 
 - [ ] **Step 4: Integrate Admin portal**
 
-Add an `Activar notificaciones`/`Desactivar notificaciones` control and toast host to `admin.html`. After `requireAdmin()` succeeds, initialize notifications. `onOpen` should call `setView(kind)` and refresh only the relevant dataset (or `loadDashboard()` if focused refresh would duplicate too much code). Clean up before sign-out/unload.
+Add `Activar notificaciones`/`Desactivar notificaciones` and an `aria-live="polite"` toast host to `admin.html`. After `requireAdmin()` succeeds, call `initStaffNotifications`. The button calls `setEnabled(true, { requestSystemPermission:true })` or `setEnabled(false, { requestSystemPermission:false })`. `onOpen` switches to the related view and reloads dashboard data so the record is visible. Destroy the channel before sign-out and on unload.
 
 - [ ] **Step 5: Integrate Recruiter portal**
 
-Add the same opt-in control/toast host to `recruiter.html`. After `requireStaff()` succeeds, initialize the shared module. Map `onOpen` to `setView(kind)` and refresh data. Recruiters receive alerts but receive no delete controls.
-
-Fix recruiter role display while touching this area so `boss` displays `Boss` rather than falling through to `Reclutador`.
+Add the same control/toast host to `recruiter.html`. After `requireStaff()` succeeds, initialize the shared module. `onOpen` maps to `setView(kind)` and `loadData()`. Recruiters receive alerts but no delete controls. While touching role presentation, display `boss` as `Boss` rather than `Reclutador`.
 
 - [ ] **Step 6: Add accessible toast/control styling**
 
-Use `aria-live="polite"`, keyboard-clickable toast buttons, and responsive positioning. Keep notification UI visually separate from error banners.
+Use keyboard-accessible toast buttons, `aria-live="polite"`, responsive fixed positioning, and clear enabled/disabled copy. Keep notification UI visually separate from error banners.
 
 - [ ] **Step 7: Run focused tests and confirm GREEN**
 
@@ -373,7 +359,7 @@ Expected: PASS.
 
 ```bash
 git add staff-notifications.js admin.html admin.js admin.css recruiter.html recruiter.js staff.css tests/staff-notifications.test.js tests/admin-structure.test.js tests/recruiter-structure.test.js tests/contact-structure.test.js
-git commit -m "feat: add staff realtime notifications"
+git commit -m "feat: add opt-in staff realtime notifications"
 ```
 
 ---
@@ -390,7 +376,7 @@ git commit -m "feat: add staff realtime notifications"
 
 - [ ] **Step 1: Write failing migration security test**
 
-Assert the migration adds the three tables to `supabase_realtime` only if needed and does not add public SELECT grants or anonymous subscription privileges.
+Assert the migration adds the three tables to `supabase_realtime` only if needed and does not add public SELECT grants, anonymous subscription privileges, or authenticated DELETE grants.
 
 - [ ] **Step 2: Run test and confirm RED if publication support is absent**
 
@@ -402,7 +388,7 @@ Expected: FAIL until publication handling is explicit.
 
 - [ ] **Step 3: Add idempotent publication SQL**
 
-Use a guarded Postgres block that checks `pg_publication_tables` before each `alter publication supabase_realtime add table ...`. Do not disable RLS and do not add `grant select ... to anon`.
+Use a guarded Postgres block that checks `pg_publication_tables` before each `alter publication supabase_realtime add table ...`. Do not disable RLS and do not add `grant select ... to anon` or broad `grant delete` statements.
 
 - [ ] **Step 4: Run security test and confirm GREEN**
 
@@ -425,7 +411,7 @@ git commit -m "chore: enable secure realtime for staff inboxes"
 
 **Files:**
 - Modify only if verification reveals a feature-scoped defect.
-- Update: PR description/checklist after all commands pass.
+- Update the PR description/checklist after all commands pass.
 
 **Interfaces:**
 - Consumes: all previous tasks.
@@ -452,11 +438,11 @@ Run:
 ```bash
 node --test tests/contact-structure.test.js tests/edge-functions-structure.test.js tests/realtime-security.test.js tests/staff-notifications.test.js
 ```
-Expected: PASS, including the existing contact persistence/Gmail structure assertions.
+Expected: PASS, including existing contact persistence and Gmail notification structure assertions.
 
 - [ ] **Step 4: Review the diff for security boundaries**
 
-Confirm all of the following from the final diff:
+Confirm:
 ```text
 - no service-role key in browser code
 - no DELETE grant to anon/recruiter browser clients
@@ -465,11 +451,12 @@ Confirm all of the following from the final diff:
 - system notification text contains no PII
 - manage-staff validates invite role
 - manage-records validates caller role, type, and UUID
+- disabling notifications removes the realtime channel
 ```
 
 - [ ] **Step 5: Open/update the PR**
 
-PR summary must call out that Cloudflare merge will not deploy Supabase Edge Functions/migrations automatically and list the required manual Supabase deployment steps for `manage-staff`, `manage-records`, and migration application after merge approval.
+The PR summary must state that Cloudflare merge does not deploy Supabase Edge Functions/migrations automatically and list the required manual Supabase deployment steps for `manage-staff`, `manage-records`, and migration application after merge approval.
 
 - [ ] **Step 6: Stop before merge/deploy**
 
