@@ -43,9 +43,9 @@ try {
   }
   assert.ok(ready, `Wrangler did not start: ${logs}`)
 
-  const root = await fetch(`${origin}/`, { redirect: 'manual' })
-  assert.equal(root.status, 301, 'root must redirect permanently to Spanish')
-  assert.equal(root.headers.get('location'), '/es/')
+  const root = await fetch(`${origin}/`)
+  assert.equal(root.status, 200, 'root must serve the primary homepage')
+  assert.deepEqual(Buffer.from(await root.arrayBuffer()), await readFile('index.html'))
 
   const allowlist = (await readFile('.assetsignore', 'utf8')).split(/\r?\n/)
     .filter(line => line.startsWith('!/') && !line.endsWith('/'))

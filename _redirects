@@ -1,6 +1,4 @@
-/ /es/ 301
-/index /es/ 301
-/index/ /es/ 301
+/ /index.html 200
 /es /es/index.html 200
 /es/ /es/index.html 200
 /en /en/index.html 200
