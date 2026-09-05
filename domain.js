@@ -1,6 +1,12 @@
+export const MANAGER_ROLES = ['admin', 'boss']
+
+export function isManagerProfile(profile) {
+  return Boolean(profile?.active && MANAGER_ROLES.includes(profile.role))
+}
+
 export function routeForProfile(profile) {
   if (!profile?.active) return null
-  if (profile.role === 'admin') return 'admin.html'
+  if (MANAGER_ROLES.includes(profile.role)) return 'admin.html'
   if (profile.role === 'recruiter') return 'recruiter.html'
   return null
 }
