@@ -5,17 +5,17 @@ import { readFile } from 'node:fs/promises'
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('manager invite flow exposes and propagates the selected role', async () => {
-  const [html, admin, api, fn] = await Promise.all([
-    read('admin.html'),
-    read('admin.js'),
+  const [enhancement, auth, api, fn] = await Promise.all([
+    read('admin-manager-actions.js'),
+    read('auth.js'),
     read('data-api.js'),
     read('supabase/functions/manage-staff/index.ts'),
   ])
 
-  assert.match(html, /name="role"/)
-  for (const role of ['admin', 'boss', 'recruiter']) assert.match(html, new RegExp(`value="${role}"`))
-  assert.match(html, /value="recruiter"[^>]*selected|selected[^>]*value="recruiter"/)
-  assert.match(admin, /inviteStaff\([^)]*values\.role/)
+  for (const role of ['admin', 'boss', 'recruiter']) assert.match(enhancement, new RegExp(`value="${role}"`))
+  assert.match(enhancement, /value="recruiter" selected/)
+  assert.match(enhancement, /inviteStaff\([\s\S]*values\.role/)
+  assert.match(auth, /import\(['"]\.\/admin-manager-actions\.js['"]\)/)
   assert.match(api, /export async function inviteStaff\(name, email, role\)/)
   assert.match(api, /body:\s*\{\s*action:\s*['"]invite['"],\s*name,\s*email,\s*role\s*\}/s)
   assert.match(fn, /allowedRoles\s*=\s*\['admin',\s*'boss',\s*'recruiter'\]/)
@@ -24,9 +24,10 @@ test('manager invite flow exposes and propagates the selected role', async () =>
 })
 
 test('manager-only record deletion is server-side and excludes applications', async () => {
-  const [api, fn] = await Promise.all([
+  const [api, fn, migration] = await Promise.all([
     read('data-api.js'),
     read('supabase/functions/manage-records/index.ts'),
+    read('supabase/migrations/2026090503_manager_record_delete.sql'),
   ])
 
   assert.match(api, /export async function deleteOperationalRecord\(type, id\)/)
@@ -36,33 +37,38 @@ test('manager-only record deletion is server-side and excludes applications', as
   assert.match(fn, /business_lead:\s*['"]business_leads['"]/)
   assert.doesNotMatch(fn, /application:\s*['"]applications['"]/)
   assert.match(fn, /\.delete\(\)[\s\S]*\.eq\(['"]id['"],\s*id\)/)
+  assert.match(migration, /revoke delete on public\.contact_messages from anon, authenticated/i)
+  assert.match(migration, /revoke delete on public\.business_leads from anon, authenticated/i)
 })
 
 test('admin delete controls require permanent-deletion confirmation', async () => {
-  const admin = await read('admin.js')
-  assert.match(admin, /data-delete-message/)
-  assert.match(admin, /data-delete-lead/)
-  assert.match(admin, /window\.confirm\([^)]*permanent/i)
-  assert.match(admin, /await deleteOperationalRecord\(['"]contact_message['"]/)
-  assert.match(admin, /await deleteOperationalRecord\(['"]business_lead['"]/)
+  const enhancement = await read('admin-manager-actions.js')
+  assert.match(enhancement, /data\.managerDeleteType/)
+  assert.match(enhancement, /contact_message/)
+  assert.match(enhancement, /business_lead/)
+  assert.match(enhancement, /window\.confirm\([^)]*permanent/i)
+  assert.match(enhancement, /await deleteOperationalRecord\(type, id\)/)
+  assert.doesNotMatch(enhancement, /applications[^\n]*delete/i)
 })
 
 test('staff realtime notifications are authenticated-only, opt-in and generic', async () => {
-  const [module, admin, recruiter, publicApp] = await Promise.all([
+  const [module, bootstrap, auth, publicApp] = await Promise.all([
     read('staff-notifications.js'),
-    read('admin.js'),
-    read('recruiter.js'),
+    read('staff-notification-bootstrap.js'),
+    read('auth.js'),
     read('app.js'),
   ])
 
   for (const table of ['applications', 'contact_messages', 'business_leads']) {
-    assert.match(module, new RegExp(`event:\\s*['"]INSERT['"][\\s\\S]*table:\\s*['"]${table}['"]`))
+    assert.match(module, new RegExp(`${table}:\\s*\\{`))
   }
+  assert.match(module, /event:\s*['"]INSERT['"]/)
   assert.doesNotMatch(module, /payload\.new\.(name|email|phone|message|full_name)/)
   assert.match(module, /Notification\.requestPermission\(\)/)
   assert.match(module, /eworker360\.staffNotifications\.enabled/)
   assert.match(module, /supabase\.removeChannel/)
-  assert.match(admin, /staff-notifications\.js/)
-  assert.match(recruiter, /staff-notifications\.js/)
-  assert.doesNotMatch(publicApp, /staff-notifications\.js/)
+  assert.match(bootstrap, /getCurrentProfile/)
+  assert.match(bootstrap, /\['admin', 'boss', 'recruiter'\]/)
+  assert.match(auth, /import\(['"]\.\/staff-notification-bootstrap\.js['"]\)/)
+  assert.doesNotMatch(publicApp, /staff-notifications|staff-notification-bootstrap/)
 })
