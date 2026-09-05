@@ -1,4 +1,3 @@
-import { notifySubmission, submitBusinessLead, submitContactMessage } from './data-api.js'
 import { bootPublishedLanding } from './landing-bootstrap.js'
 
 const scheduleNonCritical = () => {
@@ -45,10 +44,10 @@ const scheduleNonCritical = () => {
         node.innerHTML = node.dataset[locale] || original.get(node)
       })
       normalizeArrowText()
-      document.querySelectorAll('.hero-art img').forEach((image) => {
+      document.querySelectorAll('[data-alt-es]').forEach((image) => {
         image.alt = locale === 'es'
-          ? 'Profesional dominicana conectada a una red global de oportunidades'
-          : 'Dominican professional connected to a global opportunity network'
+          ? image.dataset.altEs || ''
+          : image.dataset.altEn || image.dataset.altEs || ''
       })
     }
 
@@ -86,12 +85,14 @@ const scheduleNonCritical = () => {
         const note = document.querySelector('#form-note')
         const values = Object.fromEntries(new FormData(form).entries())
         const id = crypto.randomUUID()
-        let notificationType = null
 
         if (submit) submit.disabled = true
         if (note) note.textContent = locale === 'es' ? 'Enviando mensaje…' : 'Sending message…'
 
         try {
+          const { notifySubmission, submitBusinessLead, submitContactMessage } = await import('./data-api.js')
+          let notificationType
+
           if (values.audience === 'Empresa') {
             await submitBusinessLead({
               id,
@@ -122,12 +123,13 @@ const scheduleNonCritical = () => {
           document.querySelectorAll('.audience').forEach((item) => {
             item.classList.toggle('active', item.dataset.audience === 'Empresa')
           })
+          const audienceInput = form.querySelector('[name=audience]')
+          if (audienceInput) audienceInput.value = 'Empresa'
 
           try {
-            if (notificationType === 'business_lead') await notifySubmission('business_lead', id)
-            else await notifySubmission('contact_message', id)
+            await notifySubmission(notificationType, id)
           } catch {
-            // Persistence already succeeded. Notification delivery is secondary.
+            // El mensaje ya quedó guardado. El correo es una notificación secundaria.
           }
         } catch {
           if (note) {
