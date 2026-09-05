@@ -18,6 +18,11 @@ const byId = (id) => document.getElementById(id)
 const applicationStatuses = ['Nueva', 'En revisión', 'Entrevista', 'Contratada', 'Descartada']
 const messageStatuses = ['Nuevo', 'En revisión', 'Respondido', 'Cerrado']
 const leadStatuses = ['Nuevo', 'Contactado', 'Propuesta enviada', 'Negociación', 'Ganado', 'Descartado']
+const staffRoles = [
+  ['admin', 'Administrador'],
+  ['boss', 'Boss'],
+  ['recruiter', 'Reclutador'],
+]
 const titles = {
   overview: ['Centro de control.', 'Datos compartidos y protegidos por Supabase.'],
   applications: ['Bandeja de solicitudes.', 'Revisa cada candidatura y actualiza el proceso.'],
@@ -43,6 +48,8 @@ const initials = (name) => String(name || 'SN').split(/\s+/).filter(Boolean).sli
 const statusClass = (status) => `status-${String(status).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}`
 const statusBadge = (status) => `<span class="status-badge ${statusClass(status)}">${escapeHtml(status)}</span>`
 const selectOptions = (items, selected) => items.map((item) => `<option value="${escapeHtml(item)}" ${item === selected ? 'selected' : ''}>${escapeHtml(item)}</option>`).join('')
+const staffRoleLabel = (role) => staffRoles.find(([value]) => value === role)?.[1] || role
+const staffRoleOptions = (selected) => staffRoles.map(([value, label]) => `<option value="${escapeHtml(value)}" ${value === selected ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')
 
 function dateLabel(date) {
   const value = new Date(date)
@@ -111,7 +118,7 @@ function renderRecent() {
 
 function answerLabel(key) {
   const labels = {
-    position: 'Posición', employmentMode: 'Modalidad de empleo', englishLevel: 'Nivel de inglés', referralSource: 'Cómo se enteró', fullName: 'Nombre completo', address: 'Dirección', birthDate: 'Fecha de nacimiento', cedula: 'Número de cédula', whatsapp: 'WhatsApp', email: 'Correo electrónico', transportation: 'Transporte al trabajo', traveledAbroad: 'Ha viajado fuera del país', travelDestinations: 'Destinos de viaje', hasVisa: 'Visa EE. UU. o Europa', familyAtCompany: 'Familiar en eWorker', financialAssets: 'Bancos / financieras', financialObligations: 'Obligaciones financieras', justiceIssues: 'Problemas con la justicia', academicSummary: 'Resumen académico', currentlyStudying: 'Estudia actualmente', educationLevel: 'Nivel académico', courses: 'Cursos completados', technologyLevel: 'Manejo de tecnología', workSummary: 'Resumen laboral', job1Company: 'Empleo 1 · Compañía', job1LastDate: 'Empleo 1 · Última fecha', job1ExitReason: 'Empleo 1 · Razón de salida', job2Company: 'Empleo 2 · Compañía', job2LastDate: 'Empleo 2 · Última fecha', job2ExitReason: 'Empleo 2 · Razón de salida', job3Company: 'Empleo 3 · Compañía', job3LastDate: 'Empleo 3 · Última fecha', job3ExitReason: 'Empleo 3 · Razón de salida', currentlyEmployed: 'Labora actualmente', lastSalary: 'Último salario', yearsSales: 'Años en ventas', yearsCustomerService: 'Años en servicio al cliente', consent: 'Consentimiento',
+    position: 'Posición', employmentMode: 'Modalidad de empleo', englishLevel: 'Nivel de inglés', referralSource: 'Cómo se enteró', fullName: 'Nombre completo', address: 'Dirección', birthDate: 'Fecha de nacimiento', cedula: 'Número de cédula', whatsapp: 'WhatsApp', email: 'Correo electrónico', transportation: 'Transporte al trabajo', traveledAbroad: 'Ha viajado fuera del país', travelDestinations: 'Destinos de viaje', hasVisa: 'Visa EE. UU. o Europa', familyAtCompany: 'Familiar en eWorker', financialAssets: 'Bancos / financieras', financialObligations: 'Obligaciones financieras', justiceIssues: 'Problemas con la justicia', academicSummary: 'Resumen académico', currentlyStudying: 'Estudia actualmente', educationLevel: 'Nivel académico', courses: 'Cursos completados', technologyLevel: 'Manejo de tecnología', workSummary: 'Resumen laboral', job1Company: 'Empleo 1 · Compañía', job1LastDate: 'Empleo 1 · Última fecha', job1ExitReason: 'Empleo 1 · Razón de salida', job2Company: 'Empleo 2 · Compañía', job2LastDate: 'Empleo 2 · Última fecha', job2ExitReason: 'Fin de contrato', job3Company: 'Empleo 3 · Compañía', job3LastDate: 'Empleo 3 · Última fecha', job3ExitReason: 'Empleo 3 · Razón de salida', currentlyEmployed: 'Labora actualmente', lastSalary: 'Último salario', yearsSales: 'Años en ventas', yearsCustomerService: 'Años en servicio al cliente', consent: 'Consentimiento',
   }
   return labels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase())
 }
@@ -160,7 +167,11 @@ function renderTeam() {
   const activeCount = state.profiles.filter((profile) => profile.active).length
   byId('team-count').textContent = state.profiles.length
   byId('staff-online-count').textContent = `${activeCount} activos`
-  byId('staff-list').innerHTML = state.profiles.length ? state.profiles.map((profile) => `<div class="staff-row"><span class="avatar">${escapeHtml(initials(profile.full_name || profile.email))}</span><div class="staff-info"><b>${escapeHtml(profile.full_name || 'Sin nombre')}</b><small>${escapeHtml(profile.email)} · ${escapeHtml(profile.role === 'admin' ? 'Administrador' : 'Reclutador')}</small><span class="presence ${profile.active ? 'online' : ''}">${profile.active ? 'Acceso activo' : 'Acceso pausado'}</span></div><button class="staff-action" data-staff-toggle="${escapeHtml(profile.id)}" ${profile.id === adminProfile?.id ? 'disabled title="No puedes pausar tu propia cuenta desde esta sesión"' : ''}>${profile.active ? 'Pausar' : 'Activar'}</button></div>`).join('') : '<p class="empty">No hay perfiles autorizados.</p>'
+  byId('staff-list').innerHTML = state.profiles.length ? state.profiles.map((profile) => {
+    const ownProfile = profile.id === adminProfile?.id
+    const roleControl = `<select class="staff-action" data-staff-role="${escapeHtml(profile.id)}" aria-label="Rol de ${escapeHtml(profile.full_name || profile.email)}" ${ownProfile ? 'disabled title="No puedes cambiar tu propio rol desde esta sesión"' : ''}>${staffRoleOptions(profile.role)}</select>`
+    return `<div class="staff-row"><span class="avatar">${escapeHtml(initials(profile.full_name || profile.email))}</span><div class="staff-info"><b>${escapeHtml(profile.full_name || 'Sin nombre')}</b><small>${escapeHtml(profile.email)} · ${escapeHtml(staffRoleLabel(profile.role))}</small>${roleControl}<span class="presence ${profile.active ? 'online' : ''}">${profile.active ? 'Acceso activo' : 'Acceso pausado'}</span></div><button class="staff-action" data-staff-toggle="${escapeHtml(profile.id)}" ${ownProfile ? 'disabled title="No puedes pausar tu propia cuenta desde esta sesión"' : ''}>${profile.active ? 'Pausar' : 'Activar'}</button></div>`
+  }).join('') : '<p class="empty">No hay perfiles autorizados.</p>'
 }
 
 function renderOverview() {
@@ -371,6 +382,24 @@ function bindTeam() {
       note.textContent = 'No se pudo enviar la invitación.'
       showError(`Invitación pendiente: ${error?.message || 'la función manage-staff aún no está disponible.'}`)
     } finally { button.disabled = false }
+  })
+  byId('staff-list').addEventListener('change', async (event) => {
+    const target = event.target
+    if (!target.matches('[data-staff-role]') || target.disabled) return
+    const profile = state.profiles.find((item) => item.id === target.dataset.staffRole)
+    if (!profile) return
+    const previous = profile.role
+    target.disabled = true
+    try {
+      await updateProfile(profile.id, { role: target.value })
+      profile.role = target.value
+      renderTeam()
+      clearError()
+    } catch (error) {
+      target.value = previous
+      target.disabled = false
+      showError(`No se pudo cambiar el rol. ${error?.message || ''}`)
+    }
   })
   byId('staff-list').addEventListener('click', async (event) => {
     const target = event.target.closest('[data-staff-toggle]')
