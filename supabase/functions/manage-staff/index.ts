@@ -3,6 +3,7 @@ import { corsHeaders, isAllowedOrigin, jsonResponse } from '../_shared/cors.ts'
 import { getSupabaseSecretKey, getSupabaseUrl } from '../_shared/supabase-env.ts'
 
 const inviteRedirect = 'https://javiermorenoz30.github.io/eworkerdemo/reset-password.html'
+const managerRoles = ['admin', 'boss']
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
@@ -27,8 +28,8 @@ Deno.serve(async (req) => {
       .eq('id', userData.user.id)
       .single()
 
-    if (profileError || callerProfile?.role !== 'admin' || callerProfile?.active !== true) {
-      return jsonResponse(req, { error: 'Admin access required' }, 403)
+    if (profileError || !managerRoles.includes(callerProfile?.role) || callerProfile?.active !== true) {
+      return jsonResponse(req, { error: 'Manager access required' }, 403)
     }
 
     const payload = await req.json().catch(() => null)
