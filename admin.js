@@ -13,7 +13,6 @@ import {
   updateSiteSettings,
 } from './data-api.js'
 import { applicationMetrics, csvForApplications } from './domain.js'
-import { initLandingEditor } from './landing-editor.js'
 import { LIVE_RECORD_EVENT } from './staff-notifications.js'
 
 const byId = (id) => document.getElementById(id)
@@ -30,7 +29,6 @@ const titles = {
   applications: ['Bandeja de solicitudes.', 'Revisa cada candidatura y actualiza el proceso.'],
   messages: ['Mensajes de talento.', 'Consultas recibidas desde el formulario público.'],
   leads: ['Propuestas de empresas.', 'Oportunidades comerciales recibidas desde la web.'],
-  content: ['Editar página principal.', 'Prepara el borrador, revísalo y publica cuando esté listo.'],
   settings: ['Ajustes de notificación.', 'Configura el destino de los avisos del equipo.'],
   team: ['Equipo y accesos.', 'Administra usuarios autorizados e invitaciones.'],
 }
@@ -303,16 +301,7 @@ function renderOverview() {
 
 function populateSettings() {
   if (!state.settings) return
-  const content = byId('content-form')
   const settings = byId('settings-form')
-  if (content) {
-    content.elements.brandName.value = state.settings.brand_name || ''
-    content.elements.contactEmail.value = state.settings.contact_email || ''
-    content.elements.contactPhone.value = state.settings.contact_phone || ''
-    content.elements.whatsapp.value = state.settings.whatsapp || ''
-    content.elements.heroTitle.value = state.settings.hero_title || ''
-    content.elements.heroLead.value = state.settings.hero_lead || ''
-  }
   if (settings) {
     settings.elements.notificationEmail.value = state.settings.notification_email || ''
     settings.elements.emailSubject.value = state.settings.email_subject || ''
@@ -476,36 +465,6 @@ function bindOperationalLists() {
 }
 
 function bindSettings() {
-  const contentForm = byId('content-form')
-  contentForm?.addEventListener('submit', async (event) => {
-    event.preventDefault()
-    const form = event.currentTarget
-    const button = form.querySelector('button[type="submit"], button:not([type])')
-    const note = byId('content-note')
-    button.disabled = true
-    note.textContent = 'Guardando…'
-    const values = Object.fromEntries(new FormData(form))
-    const patch = {
-      brand_name: values.brandName,
-      contact_email: values.contactEmail,
-      contact_phone: values.contactPhone,
-      whatsapp: values.whatsapp,
-      hero_title: values.heroTitle,
-      hero_lead: values.heroLead,
-    }
-    try {
-      await updateSiteSettings(patch)
-      Object.assign(state.settings, patch)
-      note.textContent = 'Configuración guardada.'
-      clearError()
-    } catch (error) {
-      note.textContent = 'No se pudieron guardar los cambios.'
-      showError(error?.message || 'Error guardando configuración.')
-    } finally {
-      button.disabled = false
-    }
-  })
-
   byId('settings-form').addEventListener('submit', async (event) => {
     event.preventDefault()
     const form = event.currentTarget
@@ -621,7 +580,6 @@ async function main() {
   byId('admin-name').textContent = adminProfile.full_name || 'Administrador'
   byId('admin-email').textContent = adminProfile.email || ''
 
-  await initLandingEditor()
   bindNavigation()
   bindApplicationActions()
   bindOperationalLists()
