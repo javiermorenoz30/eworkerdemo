@@ -19,7 +19,7 @@ test('landing API exposes public, draft, publishing and media operations', async
   }
   assert.match(api, /from\(['"]landing_versions['"]\)/)
   assert.match(api, /from\(['"]landing_sections['"]\)/)
-  assert.match(api, /rpc\(['"]save_landing_draft['"]\)/)
+  assert.match(api, /rpc\(['"]save_landing_draft['"]/)
   assert.match(api, /rpc\(['"]publish_landing['"]\)/)
   assert.match(api, /storage\.from\(['"]landing-media['"]\)/)
 })
@@ -39,6 +39,6 @@ test('image removal checks references and never deletes bundled or external imag
   assert.match(api, /landing_media_is_referenced/)
   assert.match(api, /reason:\s*['"]in-use['"]/)
   assert.match(api, /startsWith\(['"]assets\/['"]\)/)
-  assert.match(api, /https\?:\/\//)
+  assert.match(api, /\^https\?:/)
   assert.match(api, /\.remove\(\[path\]\)/)
 })
