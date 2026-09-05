@@ -256,9 +256,7 @@ const scheduleNonCritical = () => {
   else window.setTimeout(runNonCritical, 0)
 }
 
-async function startLanding() {
-  const { bootPublishedLanding } = await import('./landing-bootstrap.js')
-  await bootPublishedLanding()
+function startLanding() {
   if (document.readyState === 'complete') scheduleNonCritical()
   else window.addEventListener('load', scheduleNonCritical, { once: true })
 }

@@ -8,7 +8,6 @@ test('contact page loads the current classic entry script that uses dynamic modu
   const html = await read('index.html')
   const app = await read('app.js')
   assert.match(html, /<script src="app\.js\?v=application-inbox-1" defer><\/script>/)
-  assert.match(app, /await import\(['"]\.\/landing-bootstrap\.js['"]\)/)
   assert.match(app, /await import\(['"]\.\/data-api\.js['"]\)/)
 })
 

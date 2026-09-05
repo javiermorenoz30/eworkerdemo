@@ -25,11 +25,6 @@
 !/admin-manager-actions.js
 !/staff-notifications.js
 !/staff-notification-bootstrap.js
-!/landing-content.js
-!/landing-api.js
-!/landing-renderer.js
-!/landing-bootstrap.js
-!/landing-editor.js
 !/reset-password.js
 !/supabase-client.js
 !/supabase-config.js

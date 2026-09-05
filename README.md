@@ -2,6 +2,23 @@
 
 Sitio estático de eWorker360 Dominicana preparado para Cloudflare Workers y GitHub Pages con backend de producción en Supabase.
 
+## Contenido gestionado desde GitHub
+
+El dashboard se utiliza para solicitudes, mensajes, propuestas, equipo y ajustes
+de notificación. No incluye un editor de la web ni acciones de borrador/publicación.
+Los textos, imágenes y secciones se cambian en los archivos del repositorio mediante
+una rama y un PR: `index.html` para la landing original, `es/index.html` y
+`en/index.html` para las portadas por idioma, y las páginas de `es/` y `en/`
+para el contenido SEO. Los estilos y comportamientos están en `styles.css`,
+`seo-pages.css` y `app.js`; las imágenes, en `assets/`.
+
+La web pública usa ese HTML y no consulta las tablas del antiguo CMS, incluso
+si recibe `?preview=draft`. Al añadir recursos, actualizar `.assetsignore`.
+La captura del editor mostraba que `public.landing_versions` no estaba disponible
+en la caché del esquema de Supabase. Retirar el CMS elimina esa dependencia;
+no requiere crear la tabla ni desplegar migraciones. Las migraciones históricas
+se conservan sin cambios y no se borran datos ni recursos de Supabase.
+
 ## Cloudflare Workers: publicación reproducible
 
 `wrangler.jsonc` configura el Worker `eworkerdemo` sin código de servidor. Los archivos mantienen sus rutas `.html` y los recursos inexistentes devuelven 404.

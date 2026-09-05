@@ -20,20 +20,18 @@
         <button class="nav-item" data-view="applications"><span>02</span>Solicitudes <b id="nav-count">0</b></button>
         <button class="nav-item" data-view="messages"><span>03</span>Mensajes <b id="messages-count">0</b></button>
         <button class="nav-item" data-view="leads"><span>04</span>Propuestas <b id="leads-count">0</b></button>
-        <button class="nav-item" data-view="content"><span>05</span>Contenido</button>
-        <button class="nav-item" data-view="settings"><span>06</span>Ajustes</button>
-        <button class="nav-item" data-view="team"><span>07</span>Equipo <b id="team-count">0</b></button>
+        <button class="nav-item" data-view="settings"><span>05</span>Ajustes</button>
+        <button class="nav-item" data-view="team"><span>06</span>Equipo <b id="team-count">0</b></button>
       </nav>
-      <div class="sidebar-bottom"><a class="visit" href="index.html">Ver sitio público <i aria-hidden="true">→</i></a><small>eWorker360 / Supabase</small></div>
+      <div class="sidebar-bottom"><a class="visit" href="index.html">Ver sitio público <i aria-hidden="true">→</i></a><small>eWorker360 Dominicana</small></div>
     </aside>
 
     <main>
       <header class="topbar">
-        <div><p class="eyebrow">ADMINISTRACIÓN / EWORKER360</p><h1 id="view-title">Centro de control.</h1><p class="view-meta" id="view-meta">Datos compartidos y protegidos por Supabase.</p></div>
+        <div><p class="eyebrow">ADMINISTRACIÓN / EWORKER360</p><h1 id="view-title">Centro de control.</h1><p class="view-meta" id="view-meta">Solicitudes, mensajes y actividad del equipo.</p></div>
         <div class="top-actions"><div class="top-profile"><div><b id="admin-name">Administrador</b><small id="admin-email"></small></div></div><button class="ghost logout-button" id="logout">Cerrar sesión</button></div>
       </header>
       <div class="dashboard-error" id="dashboard-error" role="alert"></div>
-      <section class="notice"><span aria-hidden="true">i</span><p><b>Datos centralizados.</b> Solicitudes, mensajes, propuestas y seguimiento se guardan en Supabase y se comparten con el equipo autorizado.</p></section>
 
       <section class="view active" id="overview">
         <div class="command-card"><div><p class="eyebrow">PULSO DE LA OPERACIÓN</p><h2>Decide con contexto, <em>actúa con velocidad.</em></h2><p>Revisa el estado del talento y los contactos recibidos desde cualquier equipo autorizado.</p></div><div class="command-actions"><button class="primary" data-go="applications">Revisar solicitudes <i aria-hidden="true">→</i></button><button class="ghost light" data-go="messages">Ver mensajes</button></div></div>
@@ -56,19 +54,14 @@
       <section class="view" id="messages"><div class="section-heading"><div><p class="eyebrow">CONTACTO</p><h2>Mensajes de talento</h2><p>Consultas recibidas desde la ruta “Busco empleo”.</p></div></div><div id="messages-list" class="data-list"></div></section>
       <section class="view" id="leads"><div class="section-heading"><div><p class="eyebrow">EMPRESAS</p><h2>Propuestas y oportunidades</h2><p>Contactos recibidos desde la ruta de empresas.</p></div></div><div id="leads-list" class="data-list"></div></section>
 
-      <section class="view" id="content">
-        <div class="section-heading"><div><p class="eyebrow">CONFIGURACIÓN COMPARTIDA</p><h2>Contenido base</h2><p>Estos valores se guardan en Supabase para administración. La landing pública permanece estática hasta una publicación posterior.</p></div><a class="ghost link-button" href="index.html" target="_blank" rel="noopener">Abrir landing <i aria-hidden="true">→</i></a></div>
-        <form id="content-form" class="card form"><div class="form-section"><p class="eyebrow">IDENTIDAD</p><div class="field-grid"><label>Nombre comercial<input name="brandName" /></label><label>Correo de contacto<input name="contactEmail" type="email" /></label><label>Teléfono<input name="contactPhone" type="tel" /></label><label>WhatsApp<input name="whatsapp" /></label></div></div><div class="form-section"><p class="eyebrow">HERO PRINCIPAL</p><label>Titular<textarea name="heroTitle"></textarea></label><label>Texto introductorio<textarea name="heroLead"></textarea></label></div><div class="form-footer"><p id="content-note" class="form-note" aria-live="polite"></p><button class="primary">Guardar configuración</button></div></form>
-      </section>
-
       <section class="view" id="settings">
-        <div class="section-heading"><div><p class="eyebrow">OPERACIÓN</p><h2>Ajustes de notificación</h2><p>Configura el destino de los avisos. El envío por correo se activará mediante la función segura de Supabase.</p></div></div>
-        <div class="settings-grid"><form id="settings-form" class="card form"><p class="eyebrow">NOTIFICACIONES</p><label>Correo que recibirá avisos<input name="notificationEmail" type="email" /></label><label>Asunto del correo<input name="emailSubject" /></label><label class="toggle-row"><input name="autoReply" type="checkbox" /><span><b>Confirmación automática</b><small>Preferencia almacenada; la respuesta externa se activa después de verificar el proveedor de correo.</small></span></label><div class="form-footer"><p id="settings-note" class="form-note" aria-live="polite"></p><button class="primary">Guardar ajustes</button></div></form><aside class="card readiness"><p class="eyebrow">ESTADO</p><h2>Backend conectado.</h2><ol><li><span>01</span><div><b>Supabase Auth</b><small>Acceso privado por correo y contraseña.</small></div></li><li><span>02</span><div><b>Base de datos</b><small>Datos centralizados con RLS.</small></div></li><li><span>03</span><div><b>Correo transaccional</b><small>Pendiente de proveedor y función.</small></div></li></ol></aside></div>
+        <div class="section-heading"><div><p class="eyebrow">OPERACIÓN</p><h2>Ajustes de notificación</h2><p>Configura dónde recibirá el equipo los avisos del sitio.</p></div></div>
+        <div class="settings-grid" style="grid-template-columns:1fr"><form id="settings-form" class="card form"><p class="eyebrow">NOTIFICACIONES</p><label>Correo que recibirá avisos<input name="notificationEmail" type="email" /></label><label>Asunto del correo<input name="emailSubject" /></label><label class="toggle-row"><input name="autoReply" type="checkbox" /><span><b>Confirmación automática</b><small>Preferencia almacenada; la respuesta externa se activa después de verificar el proveedor de correo.</small></span></label><div class="form-footer"><p id="settings-note" class="form-note" aria-live="polite"></p><button class="primary">Guardar ajustes</button></div></form></div>
       </section>
 
       <section class="view" id="team">
         <div class="section-heading"><div><p class="eyebrow">ACCESOS</p><h2>Equipo de solicitudes</h2><p>Invita reclutadores y pausa o reactiva su acceso.</p></div><a class="ghost link-button" href="staff-login.html" target="_blank" rel="noopener">Abrir inicio de sesión <i aria-hidden="true">→</i></a></div>
-        <div class="team-grid"><form id="staff-form" class="card form"><p class="eyebrow">NUEVO ACCESO</p><h2>Invitar reclutador.</h2><label>Nombre completo<input name="name" required autocomplete="name" placeholder="Ej. Laura Peña" /></label><label>Correo de acceso<input name="email" type="email" required autocomplete="email" placeholder="nombre@empresa.com" /></label><p class="access-note">La invitación se enviará mediante una función segura de Supabase. Ninguna contraseña se crea ni se guarda en este panel.</p><div class="form-footer"><p id="staff-note" class="form-note" aria-live="polite"></p><button class="primary">Enviar invitación</button></div></form><section class="card staff-card"><div class="card-heading"><div><p class="eyebrow">SUPERVISIÓN</p><h2>Usuarios autorizados</h2></div><span class="count-chip" id="staff-online-count">0 activos</span></div><div id="staff-list" class="staff-list"></div></section></div>
+        <div class="team-grid"><form id="staff-form" class="card form"><p class="eyebrow">NUEVO ACCESO</p><h2>Invitar reclutador.</h2><label>Nombre completo<input name="name" required autocomplete="name" placeholder="Ej. Laura Peña" /></label><label>Correo de acceso<input name="email" type="email" required autocomplete="email" placeholder="nombre@empresa.com" /></label><p class="access-note">La persona recibirá un correo para crear su contraseña y entrar al panel.</p><div class="form-footer"><p id="staff-note" class="form-note" aria-live="polite"></p><button class="primary">Enviar invitación</button></div></form><section class="card staff-card"><div class="card-heading"><div><p class="eyebrow">SUPERVISIÓN</p><h2>Usuarios autorizados</h2></div><span class="count-chip" id="staff-online-count">0 activos</span></div><div id="staff-list" class="staff-list"></div></section></div>
       </section>
     </main>
     <script type="module" src="admin.js?v=supabase-1"></script>
