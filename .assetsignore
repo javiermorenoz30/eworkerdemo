@@ -1,6 +1,7 @@
 # Deny by default, including dependencies, backend code, dotfiles and future files.
 # Keep this explicit list in sync when adding a public page, module or image.
 *
+!/_redirects
 !/index.html
 !/application.html
 !/admin.html

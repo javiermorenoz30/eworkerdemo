@@ -26,7 +26,7 @@ try {
     .filter(line => line.startsWith('!/') && !line.endsWith('/'))
     .map(line => line.slice(2))
   let bytes = 0
-  for (const path of allowlist) {
+  for (const path of allowlist.filter(path => path !== '_redirects')) {
     const response = await fetch(`${origin}/${path}`)
     assert.equal(response.status, 200, path)
     const source = await readFile(path)

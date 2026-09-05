@@ -6,14 +6,14 @@ Sitio estático de eWorker360 Dominicana preparado para Cloudflare Workers y Git
 
 `wrangler.jsonc` configura el Worker `eworkerdemo` sin código de servidor. Los archivos mantienen sus rutas `.html` y los recursos inexistentes devuelven 404.
 
-Aunque el directorio de assets es la raíz, `.assetsignore` **excluye todo por defecto** y permite únicamente los archivos públicos enumerados. No se publican `node_modules`, `.git`, `.github`, `tests`, `docs`, `supabase`, configuración, dependencias ni archivos nuevos sin autorizar. Al añadir una página, módulo o imagen, actualizar la lista y ejecutar las pruebas. No sustituirla por un comodín para todos los archivos JS.
+Wrangler publica únicamente `dist/`. Su build copia los archivos enumerados en `.assetsignore` y recrea la carpeta generada para eliminar recursos obsoletos. `.assetsignore` se copia también a `dist/` y **excluye todo por defecto**. No se publican `node_modules`, `.git`, `.github`, `tests`, `docs`, `supabase`, configuración, dependencias ni archivos nuevos sin autorizar. Al añadir una página, módulo o imagen, actualizar la lista y ejecutar las pruebas. No sustituirla por un comodín para todos los archivos JS. `_redirects` sirve `index.html` en `/` manteniendo las rutas `.html` existentes.
 
 Configuración de Workers Builds:
 
 - Rama de producción: `main`.
 - Directorio raíz: repositorio (`/`).
 - Instalación: `npm ci`, con `package-lock.json` versionado.
-- Build: `npm test` (el frontend no necesita compilación).
+- Build: `npm test`; Wrangler ejecuta automáticamente `npm run build` antes de publicar, incluso con el comando de deploy existente.
 - Deploy: `npm run deploy`; el comando existente `npx wrangler deploy` también utiliza la versión local fijada.
 - Wrangler está fijado en `devDependencies`; no omitir las dependencias de desarrollo durante la instalación.
 
