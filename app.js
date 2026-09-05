@@ -1,3 +1,5 @@
+import { notifySubmission, submitBusinessLead, submitContactMessage } from './data-api.js'
+
 const scheduleNonCritical = () => {
   const runNonCritical = () => {
     const html = document.documentElement
@@ -34,7 +36,57 @@ button.addEventListener('click', changeLanguage)
 document.querySelectorAll('.filter').forEach((filter) => filter.addEventListener('click', () => { document.querySelectorAll('.filter').forEach((item) => item.classList.remove('active')); filter.classList.add('active'); document.querySelectorAll('#job-list article').forEach((job) => { job.hidden = filter.dataset.filter !== 'all' && job.dataset.area !== filter.dataset.filter }) }))
 document.querySelector('#job-search').addEventListener('input', (event) => { const query = event.target.value.toLowerCase(); document.querySelectorAll('#job-list article').forEach((job) => { job.hidden = !job.textContent.toLowerCase().includes(query) }) })
 document.querySelectorAll('.audience').forEach((audience) => audience.addEventListener('click', () => { document.querySelectorAll('.audience').forEach((item) => item.classList.remove('active')); audience.classList.add('active'); document.querySelector('[name=audience]').value = audience.dataset.audience }))
-document.querySelector('#contact-form').addEventListener('submit', (event) => { event.preventDefault(); document.querySelector('#form-note').textContent = locale === 'es' ? 'Gracias. Tu mensaje está listo para ser enviado al equipo de eWorker360.' : 'Thank you. Your message is ready to be sent to the eWorker360 team.'; event.currentTarget.reset() })
+const contactForm = document.querySelector('#contact-form')
+contactForm.addEventListener('submit', async (event) => {
+  event.preventDefault()
+  const form = event.currentTarget
+  const submit = form.querySelector('button[type="submit"]')
+  const note = document.querySelector('#form-note')
+  const values = Object.fromEntries(new FormData(form).entries())
+  const id = crypto.randomUUID()
+  let notificationType = null
+
+  submit.disabled = true
+  note.textContent = locale === 'es' ? 'Enviando mensaje…' : 'Sending message…'
+
+  try {
+    if (values.audience === 'Empresa') {
+      await submitBusinessLead({
+        id,
+        company_name: '',
+        contact_name: values.name,
+        email: values.email,
+        subject: values.subject,
+        message: values.message,
+      })
+      notificationType = 'business_lead'
+    } else {
+      await submitContactMessage({
+        id,
+        name: values.name,
+        email: values.email,
+        subject: values.subject,
+        message: values.message,
+      })
+      notificationType = 'contact_message'
+    }
+
+    note.textContent = locale === 'es' ? 'Gracias. Tu mensaje fue enviado al equipo de eWorker360.' : 'Thank you. Your message was sent to the eWorker360 team.'
+    form.reset()
+    document.querySelectorAll('.audience').forEach((item) => item.classList.toggle('active', item.dataset.audience === 'Empresa'))
+
+    try {
+      if (notificationType === 'business_lead') await notifySubmission('business_lead', id)
+      else await notifySubmission('contact_message', id)
+    } catch {
+      // Persistence already succeeded. Notification delivery is secondary.
+    }
+  } catch {
+    note.textContent = locale === 'es' ? 'No pudimos enviar tu mensaje. Tus datos siguen en el formulario; inténtalo nuevamente.' : 'We could not send your message. Your information is still in the form; please try again.'
+  } finally {
+    submit.disabled = false
+  }
+})
 const employmentForm = document.querySelector('#employment-form')
 if (employmentForm) {
   employmentForm.style.display = 'none'
@@ -139,4 +191,3 @@ if (!reducedMotion) {
 
 if (document.readyState === 'complete') scheduleNonCritical()
 else window.addEventListener('load', scheduleNonCritical, { once: true })
-

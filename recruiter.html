@@ -4,15 +4,32 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
-    <title>Solicitudes | eWorker360</title>
-    <link rel="stylesheet" href="staff.css?v=team-1" />
+    <title>Reclutamiento | eWorker360</title>
+    <link rel="stylesheet" href="staff.css?v=supabase-1" />
+    <style>
+      .recruiter-tabs{display:flex;gap:8px;margin:0 0 18px;flex-wrap:wrap}.recruiter-tab{border:1px solid #d9e0ef;border-radius:999px;background:#fff;color:#43516e;padding:10px 14px;font:800 11px Arial;cursor:pointer}.recruiter-tab.active{background:#122e6a;color:#fff;border-color:#122e6a}.recruiter-view{display:none}.recruiter-view.active{display:block}.recruiter-app-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.75fr);gap:16px}.recruiter-list{min-width:0}.recruiter-row{width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;cursor:pointer}.recruiter-row.active,.recruiter-row:hover{background:#f5f8ff}.recruiter-row select{position:relative;z-index:2}.recruiter-detail{border:1px solid var(--line);border-radius:16px;background:#fff;padding:22px;box-shadow:0 16px 40px rgba(20,36,85,.06);align-self:start;position:sticky;top:18px}.detail-empty{min-height:220px;display:grid;place-content:center;text-align:center;color:var(--muted);gap:7px}.detail-heading{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.detail-heading h2{margin:0;font-size:24px;letter-spacing:-1px}.detail-heading small{display:block;color:var(--muted);margin-top:5px}.detail-contact{margin:17px 0;padding:13px 0;border-block:1px solid var(--line);font-size:12px;line-height:1.8}.detail-contact a{color:#4052a7;text-decoration:none}.answer-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;margin:17px 0;padding:14px;border-radius:12px;background:#f6f8fd}.answer-row{min-width:0}.answer-row b,.answer-row span{display:block}.answer-row b{font-size:9px;color:#75809b;text-transform:uppercase;letter-spacing:.35px}.answer-row span{margin-top:4px;color:#1a2b59;font-size:12px;overflow-wrap:anywhere}.detail-field{display:grid;gap:7px;margin:14px 0}.detail-field label{font-size:10px;color:#66718d;font-weight:800}.detail-field select,.detail-field textarea{width:100%;border:1px solid #d9e0ef;border-radius:9px;background:#fbfcff;color:#182a59;padding:11px;font:12px Arial}.detail-field textarea{min-height:90px;resize:vertical}.detail-save{width:100%}.ops-list{display:grid;gap:12px}.ops-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:18px;box-shadow:0 12px 32px rgba(20,36,85,.05)}.ops-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.ops-head h3{margin:0 0 4px;font-size:16px}.ops-head small{color:var(--muted)}.ops-head select{border:1px solid #d9e0ef;border-radius:9px;background:#fbfcff;color:#182a59;padding:9px}.ops-card p{color:#526079;line-height:1.6;white-space:pre-wrap}.recruiter-error{display:none;margin:0 0 18px;padding:13px 15px;border:1px solid #f0c7d0;border-radius:10px;background:#fff0f3;color:#a4364d;font-weight:700}.recruiter-error.show{display:block}@media(max-width:850px){.recruiter-app-grid{grid-template-columns:1fr}.recruiter-detail{position:static}.answer-grid{grid-template-columns:1fr}}@media(max-width:680px){.ops-head{flex-direction:column}}
+    </style>
   </head>
   <body>
-    <header class="staff-header"><a class="staff-brand" href="index.html"><img src="assets/logoewrker.png" alt="eWorker360 Dominicana" /></a><span class="staff-tag">SOLO SOLICITUDES</span></header>
-    <main class="recruiter-shell"><header class="recruiter-top"><div class="recruiter-title"><p class="eyebrow">EQUIPO DE RECLUTAMIENTO</p><h1>Hola, <em id="recruiter-name">equipo</em>.</h1><p>Gestiona las solicitudes asignadas a eWorker360.</p></div><div class="staff-profile"><span class="profile-avatar" id="recruiter-avatar"></span><div><b>Acceso limitado</b><small>Administración de solicitudes</small></div><button class="logout" id="logout">Salir</button></div></header><section class="recruiter-notice"><span aria-hidden="true">i</span><p><b>Solo solicitudes.</b> Este portal no permite cambiar el contenido, los ajustes ni los accesos del sitio.</p></section><section class="recruiter-filters"><input id="recruiter-search" type="search" placeholder="Buscar por nombre, correo o área" /><select id="recruiter-filter"><option value="all">Todos los estados</option><option>Nueva</option><option>En revisión</option><option>Entrevista</option><option>Contratada</option><option>Descartada</option></select></section><section class="recruiter-list"><div class="recruiter-list-header"><span id="recruiter-count">0 solicitudes</span><span>Actualizar estado</span></div><div id="recruiter-applications"></div></section></main>
-    <script src="admin-data.js?v=team-1"></script>
-    <script src="staff-auth.js?v=team-1"></script>
-    <script src="recruiter.js?v=team-1"></script>
+    <header class="staff-header"><a class="staff-brand" href="index.html"><img src="assets/logoewrker.png" alt="eWorker360 Dominicana" /></a><span class="staff-tag">PORTAL DE RECLUTAMIENTO</span></header>
+    <main class="recruiter-shell">
+      <header class="recruiter-top"><div class="recruiter-title"><p class="eyebrow">EQUIPO DE RECLUTAMIENTO</p><h1>Hola, <em id="recruiter-name">equipo</em>.</h1><p>Gestiona solicitudes, mensajes y propuestas compartidas en Supabase.</p></div><div class="staff-profile"><span class="profile-avatar" id="recruiter-avatar"></span><div><b id="recruiter-role">Reclutador</b><small id="recruiter-email">Acceso operativo</small></div><button class="logout" id="logout">Salir</button></div></header>
+      <section class="recruiter-notice"><span aria-hidden="true">i</span><p><b>Acceso operativo.</b> Puedes revisar el formulario completo y actualizar seguimiento. La gestión de usuarios y ajustes permanece reservada al administrador.</p></section>
+      <div class="recruiter-error" id="recruiter-error" role="alert"></div>
+      <nav class="recruiter-tabs" aria-label="Secciones del portal">
+        <button class="recruiter-tab active" data-recruiter-view="applications">Solicitudes</button>
+        <button class="recruiter-tab" data-recruiter-view="messages">Mensajes</button>
+        <button class="recruiter-tab" data-recruiter-view="leads">Propuestas</button>
+      </nav>
+
+      <section class="recruiter-view active" id="recruiter-view-applications">
+        <section class="recruiter-filters"><input id="recruiter-search" type="search" placeholder="Buscar por nombre, correo o área" /><select id="recruiter-filter"><option value="all">Todos los estados</option><option>Nueva</option><option>En revisión</option><option>Entrevista</option><option>Contratada</option><option>Descartada</option></select></section>
+        <div class="recruiter-app-grid"><section class="recruiter-list"><div class="recruiter-list-header"><span id="recruiter-count">0 solicitudes</span><span>Estado</span></div><div id="recruiter-applications"></div></section><aside class="recruiter-detail" id="recruiter-candidate-detail" aria-live="polite"><div class="detail-empty"><b>Selecciona una solicitud</b><span>El formulario completo aparecerá aquí.</span></div></aside></div>
+      </section>
+
+      <section class="recruiter-view" id="recruiter-view-messages"><div class="ops-list" id="recruiter-messages"><p class="empty">Cargando mensajes…</p></div></section>
+      <section class="recruiter-view" id="recruiter-view-leads"><div class="ops-list" id="recruiter-leads"><p class="empty">Cargando propuestas…</p></div></section>
+    </main>
+    <script type="module" src="recruiter.js?v=supabase-1"></script>
   </body>
 </html>
-
