@@ -1,5 +1,5 @@
 import { supabase } from './supabase-client.js'
-import { routeForProfile } from './domain.js'
+import { isManagerProfile, routeForProfile } from './domain.js'
 
 const profileColumns = 'id,email,full_name,role,active'
 
@@ -43,7 +43,7 @@ function redirectToLogin() {
 
 export async function requireAdmin() {
   const profile = await getCurrentProfile()
-  if (!profile?.active || profile.role !== 'admin') {
+  if (!isManagerProfile(profile)) {
     await supabase.auth.signOut().catch(() => {})
     redirectToLogin()
     return null
@@ -53,7 +53,7 @@ export async function requireAdmin() {
 
 export async function requireStaff() {
   const profile = await getCurrentProfile()
-  if (!profile?.active || !['admin', 'recruiter'].includes(profile.role)) {
+  if (!profile?.active || !['admin', 'boss', 'recruiter'].includes(profile.role)) {
     await supabase.auth.signOut().catch(() => {})
     redirectToLogin()
     return null
