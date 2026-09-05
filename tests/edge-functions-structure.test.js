@@ -24,14 +24,19 @@ test('manage-staff verifies manager caller before using server-side invite API',
   assert.doesNotMatch(code, /sb_secret_[A-Za-z0-9_-]+/)
 })
 
-test('notification function accepts only type and id, fetches server-side, and uses idempotency', async () => {
+test('notification function fetches server-side and sends through Gmail SMTP', async () => {
   const code = await read('supabase/functions/notify-submission/index.ts')
   assert.match(code, /application/)
   assert.match(code, /contact_message/)
   assert.match(code, /business_lead/)
-  assert.match(code, /Idempotency-Key/)
-  assert.match(code, /RESEND_API_KEY/)
+  assert.match(code, /npm:nodemailer/)
+  assert.match(code, /smtp\.gmail\.com/)
+  assert.match(code, /port:\s*465/)
+  assert.match(code, /secure:\s*true/)
+  assert.match(code, /GMAIL_SMTP_USER/)
+  assert.match(code, /GMAIL_APP_PASSWORD/)
   assert.match(code, /site_settings/)
+  assert.doesNotMatch(code, /RESEND_API_KEY|RESEND_FROM_EMAIL|api\.resend\.com/)
   assert.doesNotMatch(code, /sb_secret_[A-Za-z0-9_-]+/)
 })
 
