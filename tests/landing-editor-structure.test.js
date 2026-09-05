@@ -28,7 +28,7 @@ test('landing editor uses approved templates and supports section management', a
   for (const action of ['move-up','move-down','toggle-visible','duplicate','delete','edit']) {
     assert.match(editor, new RegExp(action), `missing section action ${action}`)
   }
-  assert.match(editor, /draggable\s*=\s*true/)
+  assert.match(editor, /card\.draggable = !busy && loaded/)
   assert.match(editor, /dragstart/)
   assert.match(editor, /drop/)
 })
