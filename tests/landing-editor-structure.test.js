@@ -22,7 +22,7 @@ test('admin integrates the simple landing editor and removes technical status pa
 
 test('landing editor uses approved templates and supports section management', async () => {
   const editor = await read('landing-editor.js')
-  for (const name of ['LANDING_TEMPLATES','createSection','moveSection','duplicateSection','removeSection','getDraftLanding','saveDraft','publishDraft']) {
+  for (const name of ['LANDING_TEMPLATES','createSection','fieldsForSection','moveSection','duplicateSection','removeSection','getDraftLanding','saveDraft','publishDraft']) {
     assert.match(editor, new RegExp(`\\b${name}\\b`), `missing ${name}`)
   }
   for (const action of ['move-up','move-down','toggle-visible','duplicate','delete','edit']) {
@@ -40,6 +40,10 @@ test('landing editor supports Spanish, English, arrays and direct image manageme
   assert.match(editor, /localizedText/)
   assert.match(editor, /localizedTextarea/)
   assert.match(editor, /localizedLink/)
+  assert.match(editor, /localizedArray/)
+  assert.match(editor, /field\.type === ['"]group['"]/)
+  assert.match(editor, /data-localized-array-add/)
+  assert.match(editor, /data-localized-array-remove/)
   assert.match(editor, /data-array-add/)
   assert.match(editor, /data-array-remove/)
   assert.match(editor, /uploadLandingImage/)
