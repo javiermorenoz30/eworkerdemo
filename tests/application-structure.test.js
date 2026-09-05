@@ -22,9 +22,12 @@ test('employment form uses stable field names and production module submission',
 
 test('public application persistence inserts without selecting the sensitive row back', async () => {
   const api = await read('data-api.js')
-  assert.match(api, /from\(['"]applications['"]\)/)
-  assert.match(api, /\.insert\(/)
-  assert.doesNotMatch(api, /applications[\s\S]{0,300}\.select\(/)
+  const match = api.match(/export async function submitApplication\(record\) \{([\s\S]*?)\n\}\n\nexport async function/)
+  assert.ok(match, 'submitApplication function was not found')
+  const submitApplicationBody = match[1]
+  assert.match(submitApplicationBody, /from\(['"]applications['"]\)/)
+  assert.match(submitApplicationBody, /\.insert\(/)
+  assert.doesNotMatch(submitApplicationBody, /\.select\(/)
 })
 
 test('application page persists first and treats notification as secondary', async () => {
