@@ -18,6 +18,15 @@ function showDraftPreviewBanner() {
   robots.content = 'noindex,nofollow'
 }
 
+function showDraftPreviewState(root, message) {
+  const panel = document.createElement('section')
+  panel.style.cssText = 'max-width:760px;margin:120px auto;padding:32px;border:1px solid #e2e6f0;border-radius:16px;background:#fff;font:600 16px/1.6 system-ui,sans-serif;color:#273552'
+  panel.textContent = message
+  root.replaceChildren(panel)
+  root.dataset.landingSource = 'draft-preview'
+  showDraftPreviewBanner()
+}
+
 export async function bootPublishedLanding() {
   const root = document.querySelector('main')
   if (!root) return false
@@ -26,13 +35,26 @@ export async function bootPublishedLanding() {
   try {
     const landing = preview ? await getDraftLanding() : await getPublishedLanding()
     const sections = Array.isArray(landing?.sections) ? landing.sections : []
+
+    if (preview && !sections.length) {
+      showDraftPreviewState(root, 'No hay contenido en el borrador.')
+      return false
+    }
+
     if (!sections.length) return false
+
     renderLanding(root, sections, { locale: document.documentElement.lang === 'en' ? 'en' : 'es' })
     root.dataset.landingSource = preview ? 'draft-preview' : 'published'
     if (preview) showDraftPreviewBanner()
     return true
   } catch (error) {
-    console.warn(`No pudimos cargar ${preview ? 'el borrador' : 'el contenido publicado'}. Se mantiene la versión incluida en la página.`, error)
+    if (preview) {
+      console.warn('No pudimos cargar la vista previa del borrador.', error)
+      showDraftPreviewState(root, 'No pudimos cargar la vista previa del borrador.')
+      return false
+    }
+
+    console.warn('No pudimos cargar el contenido publicado. Se mantiene la versión incluida en la página.', error)
     root.dataset.landingSource = 'fallback'
     return false
   }
