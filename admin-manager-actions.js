@@ -131,7 +131,6 @@ function bindDeletion() {
       button.closest('.data-record')?.remove()
       const counter = document.getElementById(type === 'contact_message' ? 'messages-count' : 'leads-count')
       if (counter) counter.textContent = String(Math.max(0, Number(counter.textContent || 0) - 1))
-      window.setTimeout(() => window.location.reload(), 450)
     } catch (error) {
       const box = document.getElementById('dashboard-error')
       if (box) {
