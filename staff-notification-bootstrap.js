@@ -75,19 +75,15 @@ async function main() {
   restoreRequestedView()
   const button = ensureButton()
   updateButton(button)
-
-  if (areStaffNotificationsEnabled()) start(profile)
+  start(profile)
 
   button.addEventListener('click', async () => {
     button.disabled = true
     try {
       if (areStaffNotificationsEnabled()) {
-        controller?.destroy?.()
-        controller = null
         disableStaffNotifications()
       } else {
         await requestStaffNotificationPermission()
-        start(profile)
       }
       updateButton(button)
     } finally {
