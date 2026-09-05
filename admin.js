@@ -14,6 +14,7 @@ import {
 } from './data-api.js'
 import { applicationMetrics, csvForApplications } from './domain.js'
 import { initLandingEditor } from './landing-editor.js'
+import { LIVE_RECORD_EVENT } from './staff-notifications.js'
 
 const byId = (id) => document.getElementById(id)
 const applicationStatuses = ['Nueva', 'En revisión', 'Entrevista', 'Contratada', 'Descartada']
@@ -353,6 +354,32 @@ async function loadDashboard() {
   }
 }
 
+async function refreshLiveRecord(event) {
+  const kind = event?.detail?.kind
+  try {
+    switch (kind) {
+      case 'applications':
+        state.applications = await listApplications()
+        renderOverview()
+        renderApplications()
+        break
+      case 'messages':
+        state.messages = await listContactMessages()
+        renderMessages()
+        break
+      case 'leads':
+        state.leads = await listBusinessLeads()
+        renderLeads()
+        break
+      default:
+        return
+    }
+    clearError()
+  } catch (error) {
+    showError(`No pudimos actualizar el panel en vivo. ${error?.message || 'Inténtalo nuevamente.'}`)
+  }
+}
+
 function bindNavigation() {
   document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.view)))
   document.querySelectorAll('[data-go]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.go)))
@@ -601,6 +628,7 @@ async function main() {
   bindSettings()
   bindTeam()
   bindExportAndLogout()
+  window.addEventListener(LIVE_RECORD_EVENT, refreshLiveRecord)
   await loadDashboard()
 }
 
