@@ -21,6 +21,7 @@ test('manager invite flow exposes and propagates the selected role', async () =>
   assert.match(fn, /allowedRoles\s*=\s*\['admin',\s*'boss',\s*'recruiter'\]/)
   assert.match(fn, /Invalid staff role/)
   assert.match(fn, /role,\s*active:\s*true/)
+  assert.match(fn, /https:\/\/eworkerdemo\.zencontroller\.workers\.dev\/reset-password\.html/)
 })
 
 test('manager-only record deletion is server-side and excludes applications', async () => {
@@ -67,6 +68,9 @@ test('staff realtime notifications are authenticated-only, opt-in and generic', 
   assert.match(module, /Notification\.requestPermission\(\)/)
   assert.match(module, /eworker360\.staffNotifications\.enabled/)
   assert.match(module, /supabase\.removeChannel/)
+  assert.match(module, /aria-live|ariaLive/)
+  assert.match(module, /showSystemNotification\(config, onOpen\)/)
+  assert.match(module, /notice\.onclick[\s\S]*onOpen\?\.\(config\.kind\)/)
   assert.match(bootstrap, /getCurrentProfile/)
   assert.match(bootstrap, /\['admin', 'boss', 'recruiter'\]/)
   assert.match(auth, /import\(['"]\.\/staff-notification-bootstrap\.js['"]\)/)
