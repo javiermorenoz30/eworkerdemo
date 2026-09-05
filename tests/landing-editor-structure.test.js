@@ -62,3 +62,24 @@ test('preview loads the authenticated draft while normal visitors load published
   assert.match(bootstrap, /preview.*draft/)
   assert.match(bootstrap, /Vista previa del borrador/)
 })
+
+test('editor cannot save or publish before the initial draft has loaded successfully', async () => {
+  const editor = await read('landing-editor.js')
+  assert.match(editor, /let loaded = false/)
+  assert.match(editor, /if \(!loaded \|\| busy\) return false/)
+  assert.match(editor, /loaded = true/)
+})
+
+test('editor locks editable controls while loading or saving', async () => {
+  const editor = await read('landing-editor.js')
+  assert.match(editor, /querySelectorAll\(['"]input, textarea, select, button['"]\)/)
+  assert.match(editor, /control\.disabled = value/)
+})
+
+test('edits made around a save cannot be incorrectly marked clean', async () => {
+  const editor = await read('landing-editor.js')
+  assert.match(editor, /let revision = 0/)
+  assert.match(editor, /revision \+= 1/)
+  assert.match(editor, /const savingRevision = revision/)
+  assert.match(editor, /revision === savingRevision/)
+})
