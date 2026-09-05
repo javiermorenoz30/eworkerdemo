@@ -49,3 +49,40 @@ test('app behaviors tolerate sections that Boss/Admin hide or delete', async () 
   assert.match(app, /if \(contactForm\)|contactForm\?\.addEventListener/)
   assert.match(app, /if \(employmentForm\)/)
 })
+
+test('general Texto + imagen uses its own image layout instead of the business process layout', async () => {
+  const renderer = await read('landing-renderer.js')
+  assert.match(renderer, /function renderGeneralTextImage\b/)
+  assert.match(renderer, /if \(content\.variant === ['"]business['"]\) return renderBusiness/)
+  assert.match(renderer, /return renderGeneralTextImage\(content, locale\)/)
+})
+
+test('editable links are normalized through a safe href helper', async () => {
+  const renderer = await read('landing-renderer.js')
+  assert.match(renderer, /function safeHref\b/)
+  assert.match(renderer, /javascript:/i)
+  assert.match(renderer, /safeHref\(link\?\.href/)
+})
+
+test('localized image descriptions survive language switching', async () => {
+  const renderer = await read('landing-renderer.js')
+  const app = await read('app.js')
+  assert.match(renderer, /dataset\.altEs/)
+  assert.match(renderer, /dataset\.altEn/)
+  assert.match(app, /\[data-alt-es\]/)
+})
+
+test('draft preview never falls back to the public static page when draft is empty or fails', async () => {
+  const bootstrap = await read('landing-bootstrap.js')
+  assert.match(bootstrap, /preview[\s\S]*sections\.length[\s\S]*replaceChildren/)
+  assert.match(bootstrap, /No hay contenido en el borrador|No pudimos cargar la vista previa del borrador/)
+})
+
+test('contact submission keeps the current main persistence flow', async () => {
+  const app = await read('app.js')
+  assert.match(app, /await import\(['"]\.\/data-api\.js['"]\)/)
+  assert.match(app, /submitBusinessLead/)
+  assert.match(app, /submitContactMessage/)
+  assert.match(app, /notifySubmission\(notificationType, id\)/)
+  assert.match(app, /audienceInput\.value = ['"]Empresa['"]/)
+})
