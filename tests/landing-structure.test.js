@@ -23,8 +23,12 @@ test('public landing keeps static fallback and boots published content before ap
 
 test('renderer supports every editable landing template without executable content passthrough', async () => {
   const renderer = await read('landing-renderer.js')
-  for (const type of ['hero','metrics','cards','text_image','routes','jobs','gallery','testimonials','cta','contact','faq']) {
-    assert.match(renderer, new RegExp(`['"]${type}['"]`), `missing renderer for ${type}`)
+  const rendererNames = {
+    hero: 'renderHero', metrics: 'renderMetrics', cards: 'renderCards', text_image: 'renderTextImage', routes: 'renderRoutes',
+    jobs: 'renderJobs', gallery: 'renderGallery', testimonials: 'renderTestimonials', cta: 'renderCta', contact: 'renderContact', faq: 'renderFaq',
+  }
+  for (const [type, fn] of Object.entries(rendererNames)) {
+    assert.match(renderer, new RegExp(`${type}:\\s*${fn}`), `missing renderer for ${type}`)
   }
   assert.match(renderer, /document\.createElement/)
   assert.match(renderer, /textContent/)
@@ -74,8 +78,9 @@ test('localized image descriptions survive language switching', async () => {
 
 test('draft preview never falls back to the public static page when draft is empty or fails', async () => {
   const bootstrap = await read('landing-bootstrap.js')
-  assert.match(bootstrap, /preview[\s\S]*sections\.length[\s\S]*replaceChildren/)
-  assert.match(bootstrap, /No hay contenido en el borrador|No pudimos cargar la vista previa del borrador/)
+  assert.match(bootstrap, /function showDraftPreviewState[\s\S]*root\.replaceChildren\(panel\)/)
+  assert.match(bootstrap, /if \(preview && !sections\.length\)[\s\S]*showDraftPreviewState/)
+  assert.match(bootstrap, /if \(preview\)[\s\S]*No pudimos cargar la vista previa del borrador/)
 })
 
 test('contact submission keeps the current main persistence flow', async () => {
