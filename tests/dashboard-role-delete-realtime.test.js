@@ -52,6 +52,14 @@ test('admin delete controls require permanent-deletion confirmation', async () =
   assert.doesNotMatch(enhancement, /applications[^\n]*delete/i)
 })
 
+test('deleting a message or proposal keeps the current dashboard tab open', async () => {
+  const enhancement = await read('admin-manager-actions.js')
+  const deletion = enhancement.match(/function bindDeletion\(\) \{([\s\S]*?)\n\}\n\nasync function main/)
+  assert.ok(deletion, 'bindDeletion function must exist')
+  assert.doesNotMatch(deletion[1], /window\.location\.reload\(\)/)
+  assert.match(deletion[1], /button\.closest\(['"]\.data-record['"]\)\?\.remove\(\)/)
+})
+
 test('staff realtime notifications are authenticated-only, opt-in and generic', async () => {
   const [module, bootstrap, auth, publicApp] = await Promise.all([
     read('staff-notifications.js'),
