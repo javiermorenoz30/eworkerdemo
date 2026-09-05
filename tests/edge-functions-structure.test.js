@@ -10,15 +10,17 @@ test('function configuration keeps staff management authenticated and notificati
   assert.match(config, /\[functions\.notify-submission\][\s\S]*verify_jwt\s*=\s*false/)
 })
 
-test('manage-staff verifies caller admin before using server-side invite API', async () => {
+test('manage-staff verifies manager caller before using server-side invite API', async () => {
   const code = await read('supabase/functions/manage-staff/index.ts')
   assert.match(code, /Authorization/)
   assert.match(code, /auth\.getUser/)
-  assert.match(code, /role[\s\S]*admin/)
+  assert.match(code, /\['admin',\s*'boss'\]/)
+  assert.match(code, /includes\(callerProfile\?\.role\)/)
   assert.match(code, /active/)
   assert.match(code, /inviteUserByEmail/)
   assert.match(code, /reset-password\.html/)
   assert.match(code, /profiles/)
+  assert.match(code, /role:\s*'recruiter'/)
   assert.doesNotMatch(code, /sb_secret_[A-Za-z0-9_-]+/)
 })
 
