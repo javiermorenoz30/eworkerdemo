@@ -26,6 +26,8 @@ function ensureToastHost() {
     host = document.createElement('div')
     host.dataset.staffToastHost = ''
     host.className = 'staff-toast-host'
+    host.setAttribute('aria-live', 'polite')
+    host.setAttribute('aria-label', 'Notificaciones del equipo')
     document.body.append(host)
   }
   return host
@@ -45,7 +47,7 @@ function showToast(config, onOpen) {
   window.setTimeout(() => button.remove(), 7000)
 }
 
-function showSystemNotification(config) {
+function showSystemNotification(config, onOpen) {
   if (!('Notification' in window)) return
   if (Notification.permission !== 'granted' || !document.hidden) return
   const notice = new Notification(config.title, {
@@ -54,6 +56,7 @@ function showSystemNotification(config) {
   notice.onclick = () => {
     window.focus()
     notice.close()
+    onOpen?.(config.kind)
   }
 }
 
@@ -84,7 +87,7 @@ export function initStaffNotifications({ profile, onOpen } = {}) {
   const handleInsert = (table) => () => {
     const config = EVENT_CONFIG[table]
     showToast(config, onOpen)
-    showSystemNotification(config)
+    showSystemNotification(config, onOpen)
   }
 
   for (const table of Object.keys(EVENT_CONFIG)) {
