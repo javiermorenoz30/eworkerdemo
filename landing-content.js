@@ -13,6 +13,79 @@ const localizedTextarea = (key, label) => ({ key, label, type: 'localizedTextare
 const image = (key, label) => ({ key, label, type: 'image' })
 const localizedLink = (key, label) => ({ key, label, type: 'localizedLink' })
 const array = (key, label, itemFields) => ({ key, label, type: 'array', itemFields })
+const localizedArray = (key, label) => ({ key, label, type: 'localizedArray' })
+const group = (key, label, fields) => ({ key, label, type: 'group', fields })
+
+const servicesFields = [
+  localizedText('eyebrow', 'Texto pequeño'),
+  localizedText('title', 'Título'),
+  localizedText('highlight', 'Palabras destacadas'),
+  localizedTextarea('description', 'Descripción'),
+  array('items', 'Servicios', [
+    text('number', 'Número'),
+    localizedText('title', 'Título'),
+    localizedTextarea('description', 'Descripción'),
+  ]),
+  array('details', 'Detalles de servicios', [
+    localizedText('title', 'Título'),
+    localizedTextarea('description', 'Descripción'),
+  ]),
+]
+
+const objectiveFields = [
+  localizedText('eyebrow', 'Texto pequeño'),
+  localizedText('title', 'Título'),
+  localizedText('highlight', 'Palabras destacadas'),
+  array('items', 'Objetivos', [
+    text('icon', 'Icono'),
+    localizedText('title', 'Título'),
+    localizedTextarea('description', 'Descripción'),
+  ]),
+]
+
+const timelineFields = [
+  localizedText('eyebrow', 'Texto pequeño'),
+  array('items', 'Hitos', [
+    text('value', 'Año o dato'),
+    localizedText('title', 'Título'),
+    localizedTextarea('description', 'Descripción'),
+  ]),
+]
+
+const generalTextImageFields = [
+  image('image', 'Foto'),
+  localizedText('eyebrow', 'Texto pequeño'),
+  localizedText('title', 'Título'),
+  localizedText('highlight', 'Palabras destacadas'),
+  localizedTextarea('description', 'Descripción'),
+  localizedArray('bullets', 'Puntos destacados'),
+  localizedLink('button', 'Botón'),
+]
+
+const businessTextFields = [
+  localizedText('eyebrow', 'Texto pequeño'),
+  localizedText('title', 'Título'),
+  localizedText('highlight', 'Palabras destacadas'),
+  localizedTextarea('description', 'Descripción'),
+  localizedArray('bullets', 'Puntos destacados'),
+  localizedText('methodTitle', 'Título del método'),
+  localizedArray('steps', 'Pasos del método'),
+  localizedLink('button', 'Botón'),
+]
+
+const cultureFields = [
+  image('image', 'Foto'),
+  text('imageCaption', 'Pie de foto'),
+  localizedText('eyebrow', 'Texto pequeño'),
+  localizedText('title', 'Título'),
+  localizedText('highlight', 'Palabras destacadas'),
+  localizedTextarea('description', 'Descripción'),
+  group('vision', 'Visión', [
+    localizedText('label', 'Etiqueta'),
+    localizedTextarea('text', 'Texto'),
+  ]),
+  localizedArray('values', 'Valores'),
+]
 
 export const LANDING_TEMPLATES = {
   hero: {
@@ -25,6 +98,9 @@ export const LANDING_TEMPLATES = {
       localizedLink('primaryButton', 'Botón principal'),
       localizedLink('secondaryButton', 'Enlace secundario'),
       image('image', 'Foto principal'),
+      text('location', 'Ubicación'),
+      text('locationSuffix', 'Texto junto a la ubicación'),
+      localizedText('scrollHint', 'Texto para seguir explorando'),
     ],
     defaults: {
       eyebrow: localized('NUEVA SECCIÓN', 'NEW SECTION'),
@@ -34,6 +110,9 @@ export const LANDING_TEMPLATES = {
       primaryButton: { label: localized('Conocer más', 'Learn more'), href: '#contacto' },
       secondaryButton: { label: localized('', ''), href: '' },
       image: { path: '', alt: localized('', '') },
+      location: 'LA VEGA',
+      locationSuffix: '↗ GLOBAL',
+      scrollHint: localized('EXPLORA LA EXPERIENCIA', 'EXPLORE THE EXPERIENCE'),
     },
   },
   metrics: {
@@ -52,17 +131,12 @@ export const LANDING_TEMPLATES = {
   },
   cards: {
     label: 'Tarjetas / Servicios',
-    fields: [
-      localizedText('eyebrow', 'Texto pequeño'),
-      localizedText('title', 'Título'),
-      localizedText('highlight', 'Palabras destacadas'),
-      localizedTextarea('description', 'Descripción'),
-      array('items', 'Tarjetas', [
-        text('icon', 'Icono o número'),
-        localizedText('title', 'Título'),
-        localizedTextarea('description', 'Descripción'),
-      ]),
-    ],
+    fields: servicesFields,
+    variants: {
+      services: { fields: servicesFields },
+      objectives: { fields: objectiveFields },
+      timeline: { fields: timelineFields },
+    },
     defaults: {
       variant: 'services',
       eyebrow: localized('SERVICIOS', 'SERVICES'),
@@ -70,23 +144,19 @@ export const LANDING_TEMPLATES = {
       highlight: localized('', ''),
       description: localized('', ''),
       items: [
-        { icon: '01', title: localized('Nuevo servicio', 'New service'), description: localized('', '') },
+        { number: '01', title: localized('Nuevo servicio', 'New service'), description: localized('', '') },
       ],
+      details: [],
     },
   },
   text_image: {
     label: 'Texto + imagen',
-    fields: [
-      image('image', 'Foto'),
-      localizedText('eyebrow', 'Texto pequeño'),
-      localizedText('title', 'Título'),
-      localizedText('highlight', 'Palabras destacadas'),
-      localizedTextarea('description', 'Descripción'),
-      array('bullets', 'Puntos destacados', [
-        localizedText('text', 'Texto'),
-      ]),
-      localizedLink('button', 'Botón'),
-    ],
+    fields: generalTextImageFields,
+    variants: {
+      general: { fields: generalTextImageFields },
+      business: { fields: businessTextFields },
+      culture: { fields: cultureFields },
+    },
     defaults: {
       variant: 'general',
       image: { path: '', alt: localized('', '') },
@@ -105,6 +175,7 @@ export const LANDING_TEMPLATES = {
       localizedText('title', 'Título'),
       localizedText('highlight', 'Palabras destacadas'),
       array('items', 'Opciones', [
+        text('number', 'Número'),
         localizedText('title', 'Título'),
         localizedTextarea('description', 'Descripción'),
         localizedLink('link', 'Enlace'),
@@ -127,10 +198,16 @@ export const LANDING_TEMPLATES = {
       localizedText('title', 'Título'),
       localizedText('highlight', 'Palabras destacadas'),
       localizedTextarea('description', 'Descripción'),
+      array('filters', 'Filtros', [
+        text('value', 'Área'),
+        localizedText('label', 'Nombre visible'),
+      ]),
       array('items', 'Vacantes', [
         text('area', 'Área'),
+        localizedText('badge', 'Etiqueta'),
         localizedText('title', 'Puesto'),
         localizedTextarea('description', 'Detalles'),
+        text('href', 'Destino de aplicar'),
       ]),
       localizedTextarea('note', 'Nota final'),
     ],
@@ -153,6 +230,7 @@ export const LANDING_TEMPLATES = {
       localizedTextarea('description', 'Descripción'),
       array('items', 'Elementos', [
         image('image', 'Foto'),
+        text('meta', 'Fuente o fecha'),
         localizedText('title', 'Título'),
         localizedTextarea('description', 'Descripción'),
         localizedLink('link', 'Enlace'),
@@ -191,7 +269,7 @@ export const LANDING_TEMPLATES = {
       localizedText('title', 'Título'),
       localizedText('highlight', 'Palabras destacadas'),
       localizedTextarea('description', 'Descripción'),
-      array('perks', 'Beneficios', [localizedText('text', 'Texto')]),
+      localizedArray('perks', 'Beneficios'),
       localizedLink('button', 'Botón'),
     ],
     defaults: {
@@ -243,6 +321,13 @@ export const LANDING_TEMPLATES = {
       items: [],
     },
   },
+}
+
+export function fieldsForSection(section = {}) {
+  const template = LANDING_TEMPLATES[section.type]
+  if (!template) return []
+  const variant = section.content?.variant
+  return template.variants?.[variant]?.fields || template.fields
 }
 
 function clone(value) {
