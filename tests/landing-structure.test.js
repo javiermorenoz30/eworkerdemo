@@ -7,15 +7,18 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 test('public landing keeps static fallback and boots published content before app behaviors', async () => {
   const html = await read('index.html')
   const bootstrap = await read('landing-bootstrap.js')
+  const app = await read('app.js')
 
-  assert.match(html, /<main[^>]+id="landing-root"/)
-  assert.match(html, /type="module" src="landing-bootstrap\.js/)
+  assert.match(html, /<main>/)
   assert.match(html, /class="hero"/)
   assert.match(html, /id="contact-form"/)
+  assert.match(html, /<script type="module" src="app\.js\?v=supabase-1"><\/script>/)
   assert.match(bootstrap, /getPublishedLanding/)
   assert.match(bootstrap, /renderLanding/)
-  assert.match(bootstrap, /import\(['"]\.\/app\.js['"]\)/)
+  assert.match(bootstrap, /document\.querySelector\(['"]main['"]\)/)
   assert.match(bootstrap, /catch/)
+  assert.match(app, /import \{ bootPublishedLanding \} from ['"]\.\/landing-bootstrap\.js['"]/)
+  assert.match(app, /await bootPublishedLanding\(\)/)
 })
 
 test('renderer supports every editable landing template without executable content passthrough', async () => {
