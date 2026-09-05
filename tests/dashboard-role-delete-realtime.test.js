@@ -43,7 +43,7 @@ test('manager-only record deletion is server-side and excludes applications', as
 
 test('admin delete controls require permanent-deletion confirmation', async () => {
   const enhancement = await read('admin-manager-actions.js')
-  assert.match(enhancement, /data\.managerDeleteType/)
+  assert.match(enhancement, /button\.dataset\.managerDeleteType/)
   assert.match(enhancement, /contact_message/)
   assert.match(enhancement, /business_lead/)
   assert.match(enhancement, /window\.confirm\([^)]*permanent/i)
