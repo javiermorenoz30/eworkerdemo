@@ -2,7 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders, isAllowedOrigin, jsonResponse } from '../_shared/cors.ts'
 import { getSupabaseSecretKey, getSupabaseUrl } from '../_shared/supabase-env.ts'
 
-const inviteRedirect = 'https://eworkerdemo.zencontroller.workers.dev/reset-password.html'
+const inviteRedirect = Deno.env.get('STAFF_INVITE_REDIRECT_URL') || 'https://eworker360dominicana.com/reset-password.html'
 const managerRoles = ['admin', 'boss']
 const allowedRoles = ['admin', 'boss', 'recruiter']
 
