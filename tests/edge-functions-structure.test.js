@@ -19,7 +19,8 @@ test('manage-staff verifies manager caller and persists an allowed selected role
   assert.match(code, /includes\(callerProfile\?\.role\)/)
   assert.match(code, /active/)
   assert.match(code, /inviteUserByEmail/)
-  assert.match(code, /reset-password\.html/)
+  assert.match(code, /https:\/\/eworker360dominicana\.com\/reset-password\.html/)
+  assert.match(code, /STAFF_INVITE_REDIRECT_URL/)
   assert.match(code, /profiles/)
   assert.match(code, /allowedRoles\s*=\s*\['admin',\s*'boss',\s*'recruiter'\]/)
   assert.match(code, /Invalid staff role/)
@@ -39,11 +40,16 @@ test('manage-records verifies active manager before server-side deletion', async
   assert.doesNotMatch(code, /applications/)
 })
 
-test('notification function fetches server-side and sends through Gmail SMTP', async () => {
+test('notification function prefers Resend and keeps Gmail SMTP as fallback', async () => {
   const code = await read('supabase/functions/notify-submission/index.ts')
   assert.match(code, /application/)
   assert.match(code, /contact_message/)
   assert.match(code, /business_lead/)
+  assert.match(code, /https:\/\/eworker360dominicana\.com\/admin\.html/)
+  assert.match(code, /RESEND_API_KEY/)
+  assert.match(code, /RESEND_FROM_EMAIL/)
+  assert.match(code, /api\.resend\.com/)
+  assert.match(code, /Idempotency-Key/)
   assert.match(code, /npm:nodemailer/)
   assert.match(code, /smtp\.gmail\.com/)
   assert.match(code, /port:\s*465/)
@@ -51,7 +57,6 @@ test('notification function fetches server-side and sends through Gmail SMTP', a
   assert.match(code, /GMAIL_SMTP_USER/)
   assert.match(code, /GMAIL_APP_PASSWORD/)
   assert.match(code, /site_settings/)
-  assert.doesNotMatch(code, /RESEND_API_KEY|RESEND_FROM_EMAIL|api\.resend\.com/)
   assert.doesNotMatch(code, /sb_secret_[A-Za-z0-9_-]+/)
 })
 
