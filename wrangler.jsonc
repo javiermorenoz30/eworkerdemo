@@ -6,6 +6,16 @@
     "command": "npm run build",
     "watch_dir": ["scripts", "assets"]
   },
+  "routes": [
+    {
+      "pattern": "eworker360dominicana.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.eworker360dominicana.com",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": "./dist",
     "html_handling": "none",
