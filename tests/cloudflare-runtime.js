@@ -58,7 +58,7 @@ try {
       assert.equal(response.status, 200, `${page}${suffix} must resolve`)
       assert.equal(new URL(response.url).pathname, `/${page}.html`)
       assert.equal(new URL(response.url).searchParams.get('route_check'), '1')
-      assert.deepEqual(Buffer.from(await response.arrayBuffer()), await readFile(`${page}.html`))
+      assert.deepEqual(Buffer.from(await response.arrayBuffer()), await readFile(`dist/${page}.html`))
     }
   }
 
@@ -67,7 +67,7 @@ try {
       const response = await fetch(`${origin}${urlPath}?route_check=1`)
       assert.equal(response.status, 200, `${urlPath} must resolve`)
       assert.equal(new URL(response.url).searchParams.get('route_check'), '1')
-      assert.deepEqual(Buffer.from(await response.arrayBuffer()), await readFile(sourcePath), `${urlPath} must serve ${sourcePath}`)
+      assert.deepEqual(Buffer.from(await response.arrayBuffer()), await readFile(`dist/${sourcePath}`), `${urlPath} must serve ${sourcePath}`)
     }
   }
 
