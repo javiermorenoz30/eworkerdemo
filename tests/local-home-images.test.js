@@ -18,12 +18,20 @@ const mappings = [
   ['/wp-content/uploads/2025/06/c-Mas-de-eWorker.jpg', 'assets/c-Mas-de-eWorker.jpg'],
 ]
 
-test('published homepage uses local image URLs instead of removed WordPress paths', async () => {
+test('homepage images publish locally and at the legacy WordPress paths', async () => {
   const filter = ignore().add(await read('.assetsignore'))
 
-  for (const [, asset] of mappings) {
+  for (const [legacy, asset] of mappings) {
+    const legacyFile = legacy.slice(1)
     await access(new URL(asset, root))
+    await access(new URL(legacyFile, root))
     assert.equal(filter.ignores(asset), false, `${asset} must be published`)
+    assert.equal(filter.ignores(legacyFile), false, `${legacyFile} must be published`)
+    assert.deepEqual(
+      await readFile(new URL(asset, root)),
+      await readFile(new URL(legacyFile, root)),
+      `${legacyFile} must mirror ${asset}`,
+    )
   }
 
   await run(process.execPath, ['scripts/build-assets.js'], { cwd: rootPath })
