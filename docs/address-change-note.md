@@ -1,1 +1,0 @@
-Temporary implementation note: update the public bilingual location to Calle Basilio Gil número 17 San Antonio, próximo a la avenida Pedro A Rivera, provincia de La Vega, República Dominicana. Remove before merge if no longer useful.

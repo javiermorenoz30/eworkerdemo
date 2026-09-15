@@ -15,6 +15,18 @@ const homepageImageRewrites = [
   ['/wp-content/uploads/2025/06/c-Mas-de-eWorker.jpg', '/assets/c-Mas-de-eWorker.jpg'],
 ]
 
+const spanishAddress = 'Calle Basilio Gil número 17 San Antonio, próximo a la avenida Pedro A Rivera, provincia de La Vega, República Dominicana'
+const englishAddress = '17 Basilio Gil Street, San Antonio, near Pedro A Rivera Avenue, La Vega Province, Dominican Republic'
+const localStreetAddress = 'Calle Basilio Gil número 17, San Antonio, próximo a la avenida Pedro A Rivera'
+
+const publicAddressRewrites = [
+  ['Calle Hostos, Plaza Quezada #1, La Vega, República Dominicana.', `${spanishAddress}.`],
+  ['Calle Hostos Plaza Quezada #1, La Vega, República Dominicana.', `${spanishAddress}.`],
+  ['Calle Hostos, Plaza Quezada #1, La Vega, Dominican Republic.', `${englishAddress}.`],
+  ['Calle Hostos Plaza Quezada #1, La Vega, Dominican Republic.', `${englishAddress}.`],
+  ['Calle Hostos, Plaza Quezada #1', localStreetAddress],
+]
+
 for (const path of paths) {
   if (!resolve(root, path).startsWith(resolve(root) + sep)) throw new Error(`Invalid asset: ${path}`)
   const info = await lstat(resolve(root, path))
@@ -27,11 +39,19 @@ for (const path of [...paths, '.assetsignore']) {
   const target = resolve(output, path)
   await mkdir(dirname(target), { recursive: true })
 
-  if (path === 'index.html') {
+  if (path.endsWith('.html')) {
     let html = await readFile(resolve(root, path), 'utf8')
-    for (const [legacyPath, localPath] of homepageImageRewrites) {
-      html = html.replaceAll(legacyPath, localPath)
+
+    if (path === 'index.html') {
+      for (const [legacyPath, localPath] of homepageImageRewrites) {
+        html = html.replaceAll(legacyPath, localPath)
+      }
     }
+
+    for (const [legacyAddress, currentAddress] of publicAddressRewrites) {
+      html = html.replaceAll(legacyAddress, currentAddress)
+    }
+
     await writeFile(target, html)
     continue
   }
