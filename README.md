@@ -1,40 +1,41 @@
 # eWorker360 Dominicana
 
-Sitio estático de eWorker360 Dominicana preparado para Cloudflare Workers y GitHub Pages con backend de producción en Supabase.
+Repositorio de producción de `eworker360dominicana.com`.
 
-## Contenido gestionado desde GitHub
+La web es un frontend estático publicado con Cloudflare Workers y usa Supabase para autenticación, base de datos y Edge Functions. La rama de producción es `main`.
 
-El dashboard se utiliza para solicitudes, mensajes, propuestas, equipo y ajustes
-de notificación. No incluye un editor de la web ni acciones de borrador/publicación.
-Los textos, imágenes y secciones se cambian en los archivos del repositorio mediante
-una rama y un PR: `index.html` para la landing original, `es/index.html` y
-`en/index.html` para las portadas por idioma, y las páginas de `es/` y `en/`
-para el contenido SEO. Los estilos y comportamientos están en `styles.css`,
-`seo-pages.css` y `app.js`; las imágenes, en `assets/`.
+## Estructura actual
 
-La web pública usa ese HTML y no consulta las tablas del antiguo CMS, incluso
-si recibe `?preview=draft`. Al añadir recursos, actualizar `.assetsignore`.
-La captura del editor mostraba que `public.landing_versions` no estaba disponible
-en la caché del esquema de Supabase. Retirar el CMS elimina esa dependencia;
-no requiere crear la tabla ni desplegar migraciones. Las migraciones históricas
-se conservan sin cambios y no se borran datos ni recursos de Supabase.
+El contenido público se mantiene directamente en GitHub; el antiguo editor/CMS de landing ya no forma parte del flujo de publicación.
 
-## Cloudflare Workers: publicación reproducible
+Archivos principales:
 
-`wrangler.jsonc` configura el Worker `eworkerdemo` sin código de servidor. Los archivos mantienen sus rutas `.html` y los recursos inexistentes devuelven 404.
+- `index.html`: landing principal.
+- `styles.css` / `app.js`: estilos y comportamiento de la landing.
+- `application.html` / `application.js`: formulario de empleo.
+- `admin.html`, `admin.js`, `admin.css`: panel administrativo.
+- `recruiter.html`, `recruiter.js`, `staff.css`: panel operativo.
+- `staff-login.html`, `reset-password.html`, `reset-password.js`: acceso y recuperación.
+- `es/` y `en/`: páginas SEO bilingües.
+- `seo-pages.css`: estilos de las páginas SEO.
+- `assets/`: imágenes, logotipo y recursos públicos.
+- `supabase/`: migraciones históricas, configuración y Edge Functions.
 
-Wrangler publica únicamente `dist/`. Su build copia los archivos enumerados en `.assetsignore` y recrea la carpeta generada para eliminar recursos obsoletos. `.assetsignore` se copia también a `dist/` y **excluye todo por defecto**. No se publican `node_modules`, `.git`, `.github`, `tests`, `docs`, `supabase`, configuración, dependencias ni archivos nuevos sin autorizar. Al añadir una página, módulo o imagen, actualizar la lista y ejecutar las pruebas. No sustituirla por un comodín para todos los archivos JS. `_redirects` sirve `index.html` en `/` manteniendo las rutas `.html` existentes.
+No mover estos archivos únicamente para reorganizar carpetas: varias rutas forman parte del sitio publicado, redirects, Auth y pruebas.
 
-Configuración de Workers Builds:
+## Contenido y assets
 
-- Rama de producción: `main`.
-- Directorio raíz: repositorio (`/`).
-- Instalación: `npm ci`, con `package-lock.json` versionado.
-- Build: `npm test`; Wrangler ejecuta automáticamente `npm run build` antes de publicar, incluso con el comando de deploy existente.
-- Deploy: `npm run deploy`; el comando existente `npx wrangler deploy` también utiliza la versión local fijada.
-- Wrangler está fijado en `devDependencies`; no omitir las dependencias de desarrollo durante la instalación.
+Los textos, imágenes y secciones de la web se editan en los archivos versionados del repositorio y se publican mediante una rama/PR.
 
-Verificación local/CI:
+`assets/` contiene los recursos visuales. Al agregar una página, script, hoja de estilos o imagen pública, también debe añadirse a `.assetsignore`.
+
+`.assetsignore` funciona como una **allowlist**: el build excluye todo por defecto y copia a `dist/` únicamente los archivos autorizados. Esto evita publicar tests, documentación interna, configuración, `supabase/`, `.github/`, dependencias u otros archivos del repositorio.
+
+## Cloudflare Workers
+
+`wrangler.jsonc` publica el contenido generado en `dist/`.
+
+Flujo esperado:
 
 ```bash
 npm ci
@@ -43,113 +44,107 @@ npm run check:deploy
 npm run test:assets
 ```
 
-La última prueba sirve los archivos con Wrangler, compara su contenido original y confirma respuestas 404 para rutas internas. El dry-run no publica ni certifica por sí solo el despliegue remoto. Para previsualizar: `npm run preview`.
-
-Referencia: [configuración oficial de assets y .assetsignore](https://developers.cloudflare.com/workers/static-assets/binding/).
-
-### Dominio y correo finales
-
-El origen `https://eworkerdemo.zencontroller.workers.dev` está autorizado en el código CORS. Para aplicarlo al backend existente, volver a desplegar `notify-submission` y `manage-staff`. En Supabase Auth, añadir `https://eworkerdemo.zencontroller.workers.dev/reset-password.html` a Redirect URLs; conservar GitHub Pages durante la transición. El despliegue de Workers no publica automáticamente las funciones de Supabase.
-
-Antes de usar un dominio nuevo (incluido `workers.dev`), añadir **su origen exacto** a `supabase/functions/_shared/cors.ts` y volver a desplegar ambas Edge Functions. Añadir también su URL de recuperación en Supabase Auth. No permitir globalmente `*.workers.dev`. GitHub Pages y los dominios corporativos ya enumerados se conservan.
-
-Al recibir los datos finales del cliente, actualizar el dominio/DNS, las URLs de Auth, `ADMIN_PORTAL_URL`, las URLs canónicas/sitemap/robots y los datos públicos de contacto. Configurar el destinatario en `site_settings.notification_email` y verificar el remitente corporativo en Resend. Las credenciales se mantienen en Supabase, nunca en Wrangler ni en el frontend. La entrega real del correo y el login requieren una prueba en el dominio publicado; las pruebas de código no sustituyen esa comprobación.
-
-## Arquitectura
-
-- GitHub Pages: frontend público, login y paneles.
-- Supabase Postgres: solicitudes, mensajes, propuestas, perfiles y ajustes compartidos.
-- Supabase Auth: acceso por correo y contraseña para administradores y reclutadores.
-- Supabase RLS: controla quién puede leer o modificar los datos.
-- Supabase Edge Functions: invitaciones de reclutadores y notificaciones por correo.
-- Cloudflare: DNS del dominio cuando finalicen las pruebas de producción.
-
-## Configuración pública del navegador
-
-`supabase-config.js` contiene únicamente el Project URL y la Publishable key. Esos valores son públicos por diseño. Nunca se debe añadir al repositorio una Secret key, `service_role`, contraseña de base de datos, contraseña SMTP ni API key de Resend.
-
-## Base de datos
-
-La migración inicial está en:
-
-`supabase/migrations/20260904_initial_production_schema.sql`
-
-Crea:
-
-- `profiles`
-- `applications`
-- `contact_messages`
-- `business_leads`
-- `site_settings`
-
-Todas las tablas de aplicación tienen RLS. El público puede enviar formularios, pero no puede leer los registros. Los perfiles activos `admin` y `recruiter` pueden leer las solicitudes completas y actualizar seguimiento. Solo `admin` administra perfiles y ajustes.
-
-El primer administrador debe existir primero en Supabase Auth y luego tener una fila en `public.profiles` con el mismo UUID, `role = 'admin'` y `active = true`.
-
-## Edge Functions
-
-Funciones incluidas:
-
-- `manage-staff`: requiere una sesión autenticada y vuelve a comprobar que el perfil sea un administrador activo antes de invitar reclutadores.
-- `notify-submission`: recibe únicamente `{ type, id }`, busca el registro del lado del servidor y envía el aviso al correo configurado. No devuelve datos de la solicitud al visitante.
-
-`supabase/config.toml` mantiene `manage-staff` con verificación JWT y configura `notify-submission` como endpoint público. La notificación utiliza una clave de idempotencia por tipo/registro para evitar duplicados durante reintentos.
-
-### Secretos de funciones
-
-Las credenciales internas de Supabase se suministran automáticamente al runtime de Edge Functions. Para notificaciones hay que configurar directamente en Supabase, nunca en GitHub:
-
-- `RESEND_API_KEY`
-- `RESEND_FROM_EMAIL` — remitente autorizado/verificado en Resend, por ejemplo `eWorker360 <notificaciones@dominio-verificado>`
-- `ADMIN_PORTAL_URL` — opcional; durante la migración puede apuntar al panel de GitHub Pages y después al dominio final.
-
-El dominio/remitente debe estar verificado en el proveedor de correo antes de considerar las notificaciones terminadas.
-
-## Despliegue de funciones
-
-Proyecto Supabase actual: `zyghqdnjfiulkfyhtztc`.
-
-Con Supabase CLI, después de autenticar la máquina del operador:
+Comandos disponibles:
 
 ```bash
-supabase link --project-ref zyghqdnjfiulkfyhtztc
-supabase functions deploy manage-staff
-supabase functions deploy notify-submission
+npm run build        # prepara dist/
+npm run deploy       # publica con Wrangler
+npm run preview      # servidor de desarrollo
+npm run check:deploy # dry-run de Wrangler
+npm run test:assets  # valida los assets servidos por el runtime
 ```
 
-También pueden administrarse desde la sección Edge Functions del proyecto. No se deben guardar tokens de Supabase CLI ni secretos del proyecto en el repositorio.
+GitHub Actions ejecuta la suite, el dry-run y las pruebas HTTP de assets en pull requests y en pushes a `main`.
 
-## Auth URLs durante la migración
+## Supabase
 
-Mientras el dominio final no esté activo, los redirects autorizados deben incluir:
+Supabase se usa para:
 
-`https://javiermorenoz30.github.io/eworkerdemo/**`
+- Auth de administradores/reclutadores;
+- `profiles`;
+- solicitudes de empleo;
+- mensajes de contacto;
+- leads/propuestas de empresas;
+- ajustes compartidos del sitio;
+- Edge Functions de administración y notificación.
 
-El flujo de recuperación/invitación termina en `reset-password.html`. Después del corte de dominio se añadirá `https://eworker360dominicana.com/**` y se actualizará el Site URL.
+Las tablas de aplicación están protegidas con RLS. Los formularios públicos pueden insertar los registros permitidos, pero no leer información administrativa.
+
+### Migraciones
+
+Las migraciones dentro de `supabase/migrations/` son historial de base de datos y se conservan incluso cuando una función antigua ya no se usa en la interfaz.
+
+No borrar ni reescribir migraciones históricas para "limpiar" el repositorio. Los cambios nuevos de esquema deben añadirse como nuevas migraciones.
+
+### Edge Functions
+
+Funciones versionadas actualmente:
+
+- `manage-staff`: invita y administra usuarios autorizados después de validar la sesión y el rol.
+- `manage-records`: ejecuta acciones administrativas protegidas sobre registros.
+- `notify-submission`: recibe una referencia `{ type, id }`, recupera los datos del lado del servidor y envía la notificación al correo configurado.
+
+El despliegue del frontend de Cloudflare **no despliega automáticamente** las Edge Functions de Supabase.
+
+## Correo y secretos
+
+Las credenciales privadas se configuran fuera de GitHub, dentro del entorno correspondiente de Supabase/servicios externos.
+
+Nunca guardar en el repositorio:
+
+- `service_role` o Secret keys de Supabase;
+- contraseñas de base de datos;
+- contraseñas SMTP;
+- API keys de proveedores de correo;
+- tokens CLI o credenciales de Cloudflare.
+
+`supabase-config.js` contiene únicamente valores públicos necesarios para el navegador.
+
+La función de notificación actual usa las credenciales de correo configuradas en el entorno de Supabase y obtiene el destinatario desde `site_settings`.
+
+## Auth, CORS y dominio
+
+El dominio público actual es `https://eworker360dominicana.com/`.
+
+Cuando se cambie un dominio, subdominio o URL de panel, hay que revisar conjuntamente:
+
+- Supabase Auth Site URL y Redirect URLs;
+- orígenes permitidos en `supabase/functions/_shared/cors.ts`;
+- redirect de invitación/recuperación;
+- URLs canónicas, `sitemap.xml` y `robots.txt`;
+- enlaces administrativos usados por las notificaciones.
+
+No ampliar CORS con comodines globales para `*.workers.dev`.
 
 ## Pruebas
 
-Las pruebas estructurales y de dominio se ejecutan con:
+La suite principal se ejecuta con:
 
 ```bash
 npm test
 ```
 
-GitHub Actions ejecuta la suite, el dry-run y las pruebas HTTP de assets en pull requests y en las ramas `main` y `supabase-production`.
+Además:
 
-El archivo `supabase/tests/rls-smoke.sql` contiene verificaciones manuales de seguridad para SQL Editor y termina con `rollback`.
+```bash
+npm run check:deploy
+npm run test:assets
+```
 
-## Orden de salida a producción
+Las pruebas cubren estructura de formularios/paneles, Auth, CORS, dominio, seguridad de producción, esquema activo, SEO y publicación de assets.
 
-1. Verificar migración y primer administrador.
-2. Desplegar Edge Functions.
-3. Probar login, recuperación de contraseña y RLS.
-4. Enviar una solicitud real de prueba y verificarla desde otro dispositivo.
-5. Probar mensajes y propuestas.
-6. Probar un usuario recruiter y confirmar que no puede modificar perfiles ni ajustes.
-7. Configurar y verificar correo transaccional.
-8. Ejecutar la suite completa y pruebas manuales.
-9. Solo entonces fusionar/publicar la rama aprobada y apuntar el dominio mediante Cloudflare.
-10. Conservar los registros MX/TXT/SPF/DKIM/DMARC durante el cambio de DNS.
+`supabase/tests/rls-smoke.sql` contiene verificaciones manuales de RLS para SQL Editor y termina con `rollback`.
 
-No se debe cambiar el dominio a esta versión antes de completar las pruebas anteriores.
+## Seguridad de producción
+
+Antes de fusionar cambios a `main`:
+
+1. trabajar en una rama;
+2. comprobar que no se hayan añadido secretos;
+3. ejecutar la suite completa;
+4. ejecutar el dry-run de Cloudflare;
+5. validar los assets publicados;
+6. revisar formularios, login, paneles y rutas afectadas;
+7. fusionar únicamente con CI en verde.
+
+No modificar DNS, MX/TXT/SPF/DKIM/DMARC, datos de Supabase ni configuración externa como parte de cambios puramente de código o limpieza del repositorio.
