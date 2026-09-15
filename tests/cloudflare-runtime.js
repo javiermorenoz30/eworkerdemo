@@ -45,7 +45,7 @@ try {
 
   const root = await fetch(`${origin}/`)
   assert.equal(root.status, 200, 'root must serve the primary homepage')
-  assert.deepEqual(Buffer.from(await root.arrayBuffer()), await readFile('index.html'))
+  assert.deepEqual(Buffer.from(await root.arrayBuffer()), await readFile('dist/index.html'))
 
   const allowlist = (await readFile('.assetsignore', 'utf8')).split(/\r?\n/)
     .filter(line => line.startsWith('!/') && !line.endsWith('/'))
@@ -74,9 +74,9 @@ try {
   for (const path of allowlist.filter(path => path !== '_redirects')) {
     const response = await fetch(`${origin}/${path}`)
     assert.equal(response.status, 200, path)
-    const source = await readFile(path)
-    assert.deepEqual(Buffer.from(await response.arrayBuffer()), source, `${path} changed during serving`)
-    bytes += source.length
+    const published = await readFile(`dist/${path}`)
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), published, `${path} changed during serving`)
+    bytes += published.length
   }
 
   for (const path of ['node_modules/workerd/bin/workerd', '.git/config', '.github/workflows/tests.yml', 'tests/domain.test.js', 'docs/superpowers/specs/2026-09-04-supabase-production-backend-design.md', 'supabase/config.toml', 'README.md', 'package.json', 'package-lock.json', 'wrangler.jsonc', '.assetsignore', '.env', 'missing-page.html']) {
