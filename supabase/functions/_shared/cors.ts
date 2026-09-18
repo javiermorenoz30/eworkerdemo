@@ -7,6 +7,17 @@ const allowedOrigins = new Set([
   'http://127.0.0.1:5500',
 ])
 
+const allowedHeaders = [
+  'authorization',
+  'x-client-info',
+  'apikey',
+  'content-type',
+  'x-retry-count',
+  'traceparent',
+  'tracestate',
+  'baggage',
+].join(', ')
+
 export function isAllowedOrigin(req: Request) {
   const origin = req.headers.get('origin')
   return !origin || allowedOrigins.has(origin)
@@ -16,7 +27,7 @@ export function corsHeaders(req: Request) {
   const origin = req.headers.get('origin')
   return {
     'Access-Control-Allow-Origin': origin && allowedOrigins.has(origin) ? origin : 'https://javiermorenoz30.github.io',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': allowedHeaders,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Vary': 'Origin',
   }
